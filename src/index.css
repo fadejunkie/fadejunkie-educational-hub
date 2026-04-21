@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FadeJunkie Educational Hub — Design Tokens
+   Source of truth: /DESIGN_SYSTEM.md (Notion-inspired)
+   All CSS variables map 1:1 to documented tokens. Do not add colors here
+   that aren't in DESIGN_SYSTEM.md without updating that file first.
+───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Typography ── */
+  --font-sans: 'Inter', -apple-system, system-ui, 'Segoe UI', Helvetica,
+    'Apple Color Emoji', Arial, 'Segoe UI Emoji', 'Segoe UI Symbol';
+  font-feature-settings: "kern" 1;
+
+  /* ── Color Primitives ── */
+  --color-white:        #ffffff;
+  --color-warm-white:   #f6f5f4;   /* alt section bg — yellow-brown undertone */
+  --color-warm-dark:    #31302e;   /* dark surface */
+  --color-warm-500:     #615d59;   /* secondary text */
+  --color-warm-300:     #a39e98;   /* muted / placeholder */
+
+  --color-black-95:     rgba(0, 0, 0, 0.95);  /* primary text — near-black */
+  --color-black-90:     rgba(0, 0, 0, 0.9);
+  --color-black-05:     rgba(0, 0, 0, 0.05);  /* secondary button bg */
+  --color-black-01:     rgba(0, 0, 0, 0.1);   /* whisper border */
+
+  --color-blue:         #0075de;   /* Notion Blue — primary CTA only */
+  --color-blue-active:  #005bab;   /* pressed state */
+  --color-navy:         #213183;   /* dark section accent */
+  --color-focus:        #097fe8;   /* focus ring */
+  --color-badge-bg:     #f2f9ff;   /* pill badge surface */
+  --color-badge-text:   #097fe8;   /* pill badge text */
+
+  /* Semantic */
+  --color-teal:         #2a9d99;
+  --color-green:        #1aae39;
+  --color-orange:       #dd5b00;
+  --color-pink:         #ff64c8;
+  --color-purple:       #391c57;
+  --color-brown:        #523410;
+
+  /* ── Shadows ── */
+  --shadow-card:
+    rgba(0, 0, 0, 0.04) 0px 4px 18px,
+    rgba(0, 0, 0, 0.027) 0px 2.025px 7.847px,
+    rgba(0, 0, 0, 0.02) 0px 0.8px 2.925px,
+    rgba(0, 0, 0, 0.01) 0px 0.175px 1.041px;
+
+  --shadow-deep:
+    rgba(0, 0, 0, 0.01) 0px 1px 3px,
+    rgba(0, 0, 0, 0.02) 0px 3px 7px,
+    rgba(0, 0, 0, 0.02) 0px 7px 15px,
+    rgba(0, 0, 0, 0.04) 0px 14px 28px,
+    rgba(0, 0, 0, 0.05) 0px 23px 52px;
+
+  /* ── Borders ── */
+  --border-whisper:     1px solid rgba(0, 0, 0, 0.1);
+  --border-input:       1px solid #dddddd;
+  --border-focus:       2px solid var(--color-focus);
+
+  /* ── Radius ── */
+  --radius-micro:  4px;
+  --radius-sm:     5px;
+  --radius-md:     8px;
+  --radius-lg:     12px;
+  --radius-xl:     16px;
+  --radius-pill:   9999px;
+
+  /* ── Spacing base ── */
+  --space-unit: 8px;
+}
+
+/* ─── Global Reset ─────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-black-95);
+  background: var(--color-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ─── Typography Utilities ─────────────────────────────────────────────── */
+.text-display-hero {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1.00;
+  letter-spacing: -2.125px;
+  font-feature-settings: "lnum" 1, "locl" 1;
+}
+.text-display-2 {
+  font-size: 3.375rem;
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -1.875px;
+  font-feature-settings: "lnum" 1, "locl" 1;
+}
+.text-section {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.00;
+  letter-spacing: -1.5px;
+  font-feature-settings: "lnum" 1, "locl" 1;
+}
+.text-subhead-lg {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.50;
+}
+.text-subhead {
+  font-size: 1.625rem;
+  font-weight: 700;
+  line-height: 1.23;
+  letter-spacing: -0.625px;
+}
+.text-card-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.27;
+  letter-spacing: -0.25px;
+}
+.text-body-lg {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.40;
+  letter-spacing: -0.125px;
+}
+.text-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.33;
+  letter-spacing: 0.125px;
+}
+
+/* ─── Component Primitives ─────────────────────────────────────────────── */
+
+/* Card */
+.fj-card {
+  background: var(--color-white);
+  border: var(--border-whisper);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.fj-card-hero {
+  background: var(--color-white);
+  border: var(--border-whisper);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-deep);
+}
+
+/* Pill badge */
+.fj-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-badge-bg);
+  color: var(--color-badge-text);
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.125px;
+  line-height: 1.33;
+}
+
+/* Primary button */
+.fj-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--color-blue);
+  color: var(--color-white);
+  padding: 8px 16px;
+  border-radius: var(--radius-micro);
+  border: 1px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.33;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+.fj-btn-primary:hover  { background: var(--color-blue-active); }
+.fj-btn-primary:active { transform: scale(0.9); }
+.fj-btn-primary:focus-visible { outline: var(--border-focus); outline-offset: 2px; }
+
+/* Secondary button */
+.fj-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-black-95);
+  padding: 8px 16px;
+  border-radius: var(--radius-micro);
+  border: 1px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.33;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  text-decoration: none;
+}
+.fj-btn-secondary:hover  { transform: scale(1.05); }
+.fj-btn-secondary:active { transform: scale(0.9); }
+.fj-btn-secondary:focus-visible { outline: var(--border-focus); outline-offset: 2px; }
+
+/* Section alternation */
+.fj-section       { background: var(--color-white); }
+.fj-section-alt   { background: var(--color-warm-white); }
+.fj-section-dark  { background: var(--color-warm-dark); color: var(--color-white); }
+
+/* Input */
+.fj-input {
+  background: var(--color-white);
+  color: var(--color-black-90);
+  border: var(--border-input);
+  border-radius: var(--radius-micro);
+  padding: 6px 10px;
+  font-size: 1rem;
+  font-family: var(--font-sans);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.fj-input::placeholder { color: var(--color-warm-300); }
+.fj-input:focus {
+  border-color: var(--color-focus);
+  box-shadow: var(--shadow-focus, 0 0 0 2px rgba(9, 127, 232, 0.2));
+}
