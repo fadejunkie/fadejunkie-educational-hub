@@ -17,14 +17,26 @@ export const setPartnerVisibility = mutation({
     clerkId:     v.string(),
     isVisible:   v.boolean(),
     name:        v.string(),
+    email:       v.optional(v.string()),
     handle:      v.optional(v.string()),
     avatarUrl:   v.optional(v.string()),
     type:        v.optional(v.string()),
     description: v.optional(v.string()),
   },
-  handler: async (ctx, { clerkId, isVisible, name, handle, avatarUrl, type, description }) => {
-    const user = await ctx.db.query("users").withIndex("by_clerk_id", q => q.eq("clerkId", clerkId)).first()
-    if (!user) throw new Error("User not found")
+  handler: async (ctx, { clerkId, isVisible, name, email, handle, avatarUrl, type, description }) => {
+    // Upsert user record — create it if this is their first action
+    let user = await ctx.db.query("users").withIndex("by_clerk_id", q => q.eq("clerkId", clerkId)).first()
+    if (!user) {
+      const userId = await ctx.db.insert("users", {
+        clerkId,
+        email: email ?? "",
+        name,
+        avatar: avatarUrl,
+        createdAt: Date.now(),
+      })
+      user = await ctx.db.get(userId)
+    }
+    if (!user) throw new Error("Failed to create user")
 
     const existing = await ctx.db.query("partnerProfiles").withIndex("by_user", q => q.eq("userId", user._id)).first()
     const now = Date.now()

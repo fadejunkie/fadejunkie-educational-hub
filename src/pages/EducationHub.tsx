@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, SignInButton, useUser } from '@clerk/clerk-react'
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 
 // ── Mini embeds ────────────────────────────────────────────────────────────
 
@@ -365,12 +367,122 @@ const TOPIC_ROWS = [
   { name: 'History',             count: 4  },
 ]
 
-const PROGRESS_STATS = [
-  { value: '142', label: 'Questions seen' },
-  { value: '78%', label: 'Accuracy' },
-  { value: '6', label: 'Sessions' },
-  { value: '12', label: 'Starred' },
-]
+function elapsed(ms: number): string {
+  const diff = Date.now() - ms
+  const m = Math.floor(diff / 60000)
+  const h = Math.floor(diff / 3600000)
+  const d = Math.floor(diff / 86400000)
+  if (d >= 1) return `${d}d ago`
+  if (h >= 1) return `${h}h ago`
+  if (m >= 1) return `${m}m ago`
+  return 'just now'
+}
+
+function ProgressSection() {
+  const { user } = useUser()
+  const progress = useQuery(
+    api.progress.getUserProgress,
+    user ? { clerkId: user.id } : 'skip'
+  )
+
+  const topicAccuracyMap: Record<string, number> = {}
+  if (progress?.topicAccuracy) {
+    for (const { topic, accuracy } of progress.topicAccuracy) {
+      topicAccuracyMap[topic] = accuracy
+    }
+  }
+
+  const stats = [
+    { value: progress ? String(progress.totalSeen) : '—', label: 'Questions seen' },
+    { value: progress ? `${progress.accuracy}%` : '—', label: 'Accuracy' },
+    { value: progress ? String(progress.sessions) : '—', label: 'Sessions' },
+    { value: progress ? String(progress.starred) : '—', label: 'Starred' },
+  ]
+
+  return (
+    <section style={{ padding: '40px 24px', background: 'var(--color-warm-white)' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '32px',
+        }}>
+          {/* Stats grid */}
+          <div>
+            <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+              Your Progress
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {stats.map(stat => (
+                <div key={stat.label} style={{
+                  background: 'var(--color-white)', border: 'var(--border-whisper)',
+                  borderRadius: '10px', padding: '14px 16px',
+                  boxShadow: 'var(--shadow-card)',
+                }}>
+                  <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--color-black-95)' }}>
+                    {stat.value}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.6)', marginTop: '2px' }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '10px' }}>
+              <div style={{
+                background: 'var(--color-white)', border: 'var(--border-whisper)',
+                borderRadius: '10px', padding: '14px 16px', boxShadow: 'var(--shadow-card)',
+                fontSize: '12px', color: 'rgba(0,0,0,0.6)',
+              }}>
+                {progress?.lastSession ? (
+                  <>
+                    Last session · {elapsed(progress.lastSession.completedAt)}
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-black-95)', marginTop: '2px' }}>
+                      {progress.lastSession.score} / {progress.lastSession.total} · {progress.lastSession.topic}
+                    </div>
+                  </>
+                ) : (
+                  <span style={{ color: 'rgba(0,0,0,0.38)' }}>No sessions yet</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Topic heatmap */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
+              <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Topic Mastery
+              </div>
+              <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)' }}>Darker = stronger. Click to drill.</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+              {TOPICS.map((topic) => {
+                const accuracy = topicAccuracyMap[topic] ?? 0
+                const opacity = 0.08 + (accuracy / 100) * 0.85
+                return (
+                  <Link key={topic} to={`/education/flash?topic=${encodeURIComponent(topic)}`} style={{
+                    aspectRatio: '1',
+                    background: `rgba(0, 117, 222, ${opacity})`,
+                    borderRadius: '5px',
+                    padding: '6px',
+                    fontSize: '9px',
+                    color: opacity > 0.5 ? '#fff' : 'rgba(0,0,0,0.8)',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    textDecoration: 'none',
+                    lineHeight: 1.2,
+                  }}>
+                    {topic}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
@@ -498,78 +610,7 @@ export default function EducationHub() {
 
       {/* ── Progress (signed-in only) ───────────────────────────────────── */}
       <SignedIn>
-        <section style={{ padding: '40px 24px', background: 'var(--color-warm-white)' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '32px',
-            }}>
-              {/* Stats grid */}
-              <div>
-                <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
-                  Your Progress
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {PROGRESS_STATS.map(stat => (
-                    <div key={stat.label} style={{
-                      background: 'var(--color-white)', border: 'var(--border-whisper)',
-                      borderRadius: '10px', padding: '14px 16px',
-                      boxShadow: 'var(--shadow-card)',
-                    }}>
-                      <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--color-black-95)' }}>
-                        {stat.value}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.6)', marginTop: '2px' }}>{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: '10px' }}>
-                  <div style={{
-                    background: 'var(--color-white)', border: 'var(--border-whisper)',
-                    borderRadius: '10px', padding: '14px 16px', boxShadow: 'var(--shadow-card)',
-                    fontSize: '12px', color: 'rgba(0,0,0,0.6)',
-                  }}>
-                    Last session · 2d ago
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-black-95)', marginTop: '2px' }}>38 / 50 · Sanitation + Tools</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Topic heatmap */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Topic Mastery
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)' }}>Darker = stronger. Click to drill.</div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                  {TOPICS.map((topic, i) => {
-                    const opacity = 0.08 + ((i * 37) % 92) / 100
-                    return (
-                      <Link key={topic} to={`/education/flash?topic=${encodeURIComponent(topic)}`} style={{
-                        aspectRatio: '1',
-                        background: `rgba(0, 117, 222, ${opacity})`,
-                        borderRadius: '5px',
-                        padding: '6px',
-                        fontSize: '9px',
-                        color: opacity > 0.5 ? '#fff' : 'rgba(0,0,0,0.8)',
-                        fontWeight: 500,
-                        display: 'flex',
-                        alignItems: 'flex-end',
-                        textDecoration: 'none',
-                        lineHeight: 1.2,
-                      }}>
-                        {topic}
-                      </Link>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <ProgressSection />
       </SignedIn>
 
       <style>{`

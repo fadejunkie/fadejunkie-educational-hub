@@ -39,6 +39,7 @@ export default function AccountSettings() {
         clerkId,
         isVisible: !isListed,
         name: user?.fullName ?? user?.firstName ?? 'FadeJunkie User',
+        email: user?.primaryEmailAddress?.emailAddress,
         handle: partnerProfile?.handle,
         avatarUrl: user?.imageUrl ?? partnerProfile?.avatarUrl,
         type: partnerProfile?.type,
