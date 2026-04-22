@@ -1,6 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react'
+import { useMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import { useUser } from '@clerk/clerk-react'
 import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, type Topic, type QuizCount } from '../data/studyData'
 
 // Shared mode toggle (mirrors Flash.tsx)
@@ -61,6 +64,9 @@ export default function Quiz() {
   const [answered, setAnswered] = useState(false)
   const [answers, setAnswers] = useState<Answer[]>([])
 
+  const { user } = useUser()
+  const saveSession = useMutation(api.progress.saveQuizSession)
+
   const currentQ = questions[qIndex]
   const progress = ((qIndex) / questions.length) * 100
 
@@ -79,6 +85,22 @@ export default function Quiz() {
 
   const score = answers.filter(a => a.correct).length
   const pct = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0
+
+  // Save session to Convex when quiz completes (answers state settled)
+  useEffect(() => {
+    if (phase !== 'results') return
+    if (!user) return
+    const bd = Object.entries(breakdown).map(([t, { correct, total }]) => ({ topic: t, correct, total }))
+    saveSession({
+      clerkId:        user.id,
+      topic,
+      count,
+      correct:        score,
+      total:          questions.length,
+      topicBreakdown: bd,
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
 
   function startQuiz() {
     const pool = topic === 'All'

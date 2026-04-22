@@ -1,69 +1,21 @@
-import { ArrowUpRight } from 'lucide-react'
-
-// ── Partner data ───────────────────────────────────────────────────────────
-
-interface Partner {
-  name: string
-  handle?: string
-  location?: string
-  type: string
-  description: string
-  href?: string
-  initials: string
-  accent: string // bg color for the logo tile
-}
-
-const SHOP_PARTNERS: Partner[] = [
-  {
-    name: "The Original Gentlemen's Parlor",
-    handle: '@originalgentsparlor',
-    location: 'Texas',
-    type: 'Barber Shop',
-    description: 'A classic barbershop bringing old-school craft and culture to every cut. Partnering with FadeJunkie to support student prep and community events.',
-    initials: 'OGP',
-    accent: '#1a1917',
-  },
-  {
-    name: 'Fadetoven House of Fades',
-    handle: '@fadetoven',
-    location: 'Texas',
-    type: 'Barber Shop',
-    description: 'House of Fades — precision cuts and a deep love for the craft. Collaborating with FadeJunkie on education outreach and shop culture.',
-    initials: 'FHF',
-    accent: '#213183',
-  },
-]
-
-const BRAND_PARTNERS: Partner[] = [
-  {
-    name: 'Wizardry Ink',
-    handle: '@wizardryink',
-    type: 'Tattoo Studio',
-    description: 'Custom tattoo studio contributing to FadeJunkie\'s brand through collaborative content and cross-community marketing.',
-    initials: 'WI',
-    accent: '#391c57',
-  },
-  {
-    name: 'Arquero Co.',
-    handle: '@arquero.co',
-    type: 'Brand',
-    description: 'An emerging lifestyle brand aligned with FadeJunkie\'s aesthetic. Active partner in internal brand campaigns and creative direction.',
-    initials: 'AQ',
-    accent: '#523410',
-  },
-  {
-    name: 'Lazydaze',
-    handle: '@lazydaze',
-    type: 'Brand',
-    description: 'Culture-first brand bringing laid-back energy to FadeJunkie\'s ecosystem. Contributing to campaigns, drops, and community-driven content.',
-    initials: 'LD',
-    accent: '#2a9d99',
-  },
-]
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import { Link } from 'react-router-dom'
+import { SignedIn } from '@clerk/clerk-react'
 
 // ── Partner card ───────────────────────────────────────────────────────────
 
-function PartnerCard({ partner }: { partner: Partner }) {
+interface PartnerRow {
+  _id: string
+  name: string
+  handle?: string
+  avatarUrl?: string
+  type?: string
+  description?: string
+}
+
+function PartnerCard({ p }: { p: PartnerRow }) {
+  const initials = p.name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase()
   return (
     <div
       className="fj-card"
@@ -85,97 +37,75 @@ function PartnerCard({ partner }: { partner: Partner }) {
         el.style.transform = ''
       }}
     >
-      {/* Logo tile + name row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <div style={{
-          width: '48px',
-          height: '48px',
+          width: '48px', height: '48px',
           borderRadius: 'var(--radius-md)',
-          background: partner.accent,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          fontFamily: 'var(--font-sans)',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          color: '#ffffff',
-          letterSpacing: '0.05em',
+          background: 'rgba(0,0,0,0.08)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, overflow: 'hidden',
         }}>
-          {partner.initials}
+          {p.avatarUrl ? (
+            <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-warm-500)', letterSpacing: '0.05em' }}>
+              {initials}
+            </span>
+          )}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
-            fontSize: '0.9375rem',
-            fontWeight: 700,
-            color: 'var(--color-black-95)',
-            margin: '0 0 2px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            fontSize: '0.9375rem', fontWeight: 700,
+            color: 'var(--color-black-95)', margin: '0 0 4px',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
-            {partner.name}
+            {p.name}
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span className="fj-badge">{partner.type}</span>
-            {partner.location && (
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-warm-300)' }}>
-                {partner.location}
-              </span>
-            )}
-          </div>
+          {p.type && <span className="fj-badge">{p.type}</span>}
         </div>
-        {partner.href && (
-          <ArrowUpRight size={16} color="var(--color-warm-300)" style={{ flexShrink: 0 }} />
-        )}
       </div>
 
-      {/* Description */}
-      <p style={{
-        fontSize: '0.875rem',
-        color: 'var(--color-warm-500)',
-        lineHeight: 1.6,
-        margin: 0,
-      }}>
-        {partner.description}
-      </p>
+      {p.description && (
+        <p style={{ fontSize: '0.875rem', color: 'var(--color-warm-500)', lineHeight: 1.6, margin: 0 }}>
+          {p.description}
+        </p>
+      )}
 
-      {/* Handle */}
-      {partner.handle && (
-        <p style={{
-          fontSize: '0.8rem',
-          fontWeight: 500,
-          color: 'var(--color-warm-300)',
-          margin: 0,
-          letterSpacing: '0.01em',
-        }}>
-          {partner.handle}
+      {p.handle && (
+        <p style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-warm-300)', margin: 0 }}>
+          {p.handle}
         </p>
       )}
     </div>
   )
 }
 
-// ── Section header ─────────────────────────────────────────────────────────
+// ── Coming soon state ──────────────────────────────────────────────────────
 
-function SectionLabel({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
+function ComingSoon() {
   return (
-    <div style={{ marginBottom: '28px' }}>
-      <span className="fj-badge" style={{ marginBottom: '12px', display: 'inline-flex' }}>
-        {eyebrow}
-      </span>
+    <div style={{
+      border: '1.5px dashed rgba(0,0,0,0.12)',
+      borderRadius: '16px',
+      padding: '72px 24px',
+      textAlign: 'center',
+      background: 'var(--color-warm-white)',
+    }}>
+      <div style={{ fontSize: '32px', marginBottom: '16px' }}>✂️</div>
       <h2 style={{
-        fontSize: '1.5rem',
-        fontWeight: 700,
-        color: 'var(--color-black-95)',
-        margin: '0 0 8px',
-        letterSpacing: '-0.5px',
+        fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.4px',
+        color: 'var(--color-black-95)', margin: '0 0 8px',
       }}>
-        {title}
+        Coming soon
       </h2>
-      <p style={{ fontSize: '0.9375rem', color: 'var(--color-warm-500)', margin: 0, lineHeight: 1.6 }}>
-        {sub}
+      <p style={{ fontSize: '0.9375rem', color: 'var(--color-warm-500)', margin: '0 0 28px', maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+        No partners listed yet. Be the first shop, brand, or studio to appear here.
       </p>
+      <SignedIn>
+        <Link to="/account" className="fj-btn-primary">
+          List me as a partner →
+        </Link>
+      </SignedIn>
     </div>
   )
 }
@@ -183,6 +113,8 @@ function SectionLabel({ eyebrow, title, sub }: { eyebrow: string; title: string;
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function Partners() {
+  const partners = useQuery(api.partners.listPartners)
+
   return (
     <section style={{ padding: '72px 24px 96px' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -206,40 +138,28 @@ export default function Partners() {
           </p>
         </div>
 
-        {/* Shop Partners */}
-        <div style={{ marginBottom: '64px' }}>
-          <SectionLabel
-            eyebrow="Shops"
-            title="Community barbershops"
-            sub="Local shops supporting FadeJunkie's education mission and connecting us to working barbers."
-          />
+        {/* Partner grid or coming soon */}
+        {partners === undefined ? (
+          // Loading
+          <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'rgba(0,0,0,0.38)' }}>Loading…</span>
+          </div>
+        ) : partners.length === 0 ? (
+          <ComingSoon />
+        ) : (
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '16px',
+            marginBottom: '64px',
           }}>
-            {SHOP_PARTNERS.map(p => <PartnerCard key={p.name} partner={p} />)}
+            {partners.map(p => <PartnerCard key={p._id} p={p as PartnerRow} />)}
           </div>
-        </div>
-
-        {/* Brand Partners */}
-        <div style={{ marginBottom: '64px' }}>
-          <SectionLabel
-            eyebrow="Brand Partners"
-            title="Contributing brands"
-            sub="Brands actively collaborating on internal marketing projects and growing alongside FadeJunkie."
-          />
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '16px',
-          }}>
-            {BRAND_PARTNERS.map(p => <PartnerCard key={p.name} partner={p} />)}
-          </div>
-        </div>
+        )}
 
         {/* CTA */}
         <div style={{
+          marginTop: partners && partners.length > 0 ? '0' : '48px',
           background: 'var(--color-warm-white)',
           border: 'var(--border-whisper)',
           borderRadius: 'var(--radius-xl)',
@@ -248,7 +168,7 @@ export default function Partners() {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '24px',
-          flexWrap: 'wrap',
+          flexWrap: 'wrap' as const,
         }}>
           <div>
             <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-black-95)', margin: '0 0 6px' }}>
@@ -258,11 +178,7 @@ export default function Partners() {
               Schools, distributors, shops, and culture brands — reach out directly.
             </p>
           </div>
-          <a
-            href="mailto:partners@fadejunkie.com"
-            className="fj-btn-primary"
-            style={{ whiteSpace: 'nowrap' }}
-          >
+          <a href="mailto:partners@fadejunkie.com" className="fj-btn-primary" style={{ whiteSpace: 'nowrap' as const }}>
             Get in touch
           </a>
         </div>

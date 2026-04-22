@@ -9,6 +9,8 @@
  */
 
 import type * as barber from "../barber.js";
+import type * as partners from "../partners.js";
+import type * as progress from "../progress.js";
 import type * as starredCards from "../starredCards.js";
 import type * as waitlist from "../waitlist.js";
 
@@ -20,6 +22,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   barber: typeof barber;
+  partners: typeof partners;
+  progress: typeof progress;
   starredCards: typeof starredCards;
   waitlist: typeof waitlist;
 }>;

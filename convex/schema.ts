@@ -67,10 +67,44 @@ export default defineSchema({
     .index("by_user",         ["userId"])
     .index("by_user_card",    ["userId", "cardId"]),
 
+  // ── Quiz sessions (Education Hub) ────────────────────────────────────────
+  quizSessions: defineTable({
+    userId:         v.id("users"),
+    topic:          v.string(),
+    count:          v.number(),
+    correct:        v.number(),
+    total:          v.number(),
+    topicBreakdown: v.array(v.object({
+      topic:   v.string(),
+      correct: v.number(),
+      total:   v.number(),
+    })),
+    completedAt:    v.number(),
+  })
+    .index("by_user",           ["userId"])
+    .index("by_user_completed", ["userId", "completedAt"]),
+
   // ── Waitlist ──────────────────────────────────────────────────────────────
   waitlist: defineTable({
     email:     v.string(),
     role:      v.string(),
     createdAt: v.number(),
   }).index("by_email", ["email"]),
+
+  // ── Partner profiles ──────────────────────────────────────────────────────
+  partnerProfiles: defineTable({
+    userId:      v.id("users"),
+    clerkId:     v.string(),
+    name:        v.string(),
+    handle:      v.optional(v.string()),
+    avatarUrl:   v.optional(v.string()),
+    type:        v.optional(v.string()),
+    description: v.optional(v.string()),
+    isVisible:   v.boolean(),
+    createdAt:   v.number(),
+    updatedAt:   v.number(),
+  })
+    .index("by_user",     ["userId"])
+    .index("by_clerk_id", ["clerkId"])
+    .index("by_visible",  ["isVisible"]),
 })

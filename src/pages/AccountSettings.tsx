@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SignedIn, SignedOut, useUser, useClerk, SignInButton } from '@clerk/clerk-react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 
-type Section = 'profile' | 'study' | 'data'
+type Section = 'profile' | 'study' | 'partner' | 'data'
 
 const STUDY_PREFS = [
   { label: 'Default quiz length', value: '50 questions', isToggle: false },
@@ -21,6 +23,31 @@ export default function AccountSettings() {
   const [active, setActive] = useState<Section>('profile')
   const { user } = useUser()
   const { signOut } = useClerk()
+  const clerkId = user?.id ?? ''
+
+  const partnerProfile = useQuery(api.partners.getMyPartnerProfile, clerkId ? { clerkId } : 'skip')
+  const setPartnerVisibility = useMutation(api.partners.setPartnerVisibility)
+  const [partnerSaving, setPartnerSaving] = useState(false)
+
+  const isListed = partnerProfile?.isVisible ?? false
+
+  async function togglePartner() {
+    if (!clerkId || partnerSaving) return
+    setPartnerSaving(true)
+    try {
+      await setPartnerVisibility({
+        clerkId,
+        isVisible: !isListed,
+        name: user?.fullName ?? user?.firstName ?? 'FadeJunkie User',
+        handle: partnerProfile?.handle,
+        avatarUrl: user?.imageUrl ?? partnerProfile?.avatarUrl,
+        type: partnerProfile?.type,
+        description: partnerProfile?.description,
+      })
+    } finally {
+      setPartnerSaving(false)
+    }
+  }
 
   return (
     <>
@@ -72,6 +99,7 @@ export default function AccountSettings() {
               {([
                 ['profile', 'Profile'],
                 ['study', 'Study preferences'],
+                ['partner', 'Partnership'],
                 ['data', 'Data & privacy'],
               ] as [Section, string][]).map(([id, label]) => (
                 <button
@@ -204,6 +232,71 @@ export default function AccountSettings() {
                 </div>
               )}
 
+              {/* Partnership */}
+              {active === 'partner' && (
+                <div style={{
+                  background: 'var(--color-white)',
+                  border: 'var(--border-whisper)',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  boxShadow: 'var(--shadow-card)',
+                }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--color-black-95)', margin: '0 0 4px' }}>Partnership</h2>
+                  <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.6)', margin: '0 0 24px' }}>
+                    List your shop, brand, or studio on the public Partners page.
+                  </p>
+
+                  {/* Toggle row */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '16px', borderRadius: '10px',
+                    background: isListed ? 'rgba(0,117,222,0.05)' : 'var(--color-warm-white)',
+                    border: isListed ? '1px solid rgba(0,117,222,0.2)' : 'var(--border-whisper)',
+                    marginBottom: '16px',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-black-95)', marginBottom: '2px' }}>
+                        List me as a FadeJunkie partner
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'rgba(0,0,0,0.5)' }}>
+                        {isListed ? 'You\'re visible on the Partners page.' : 'Your name and avatar will appear on the Partners page.'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={togglePartner}
+                      disabled={partnerSaving || partnerProfile === undefined}
+                      aria-label="Toggle partner listing"
+                      style={{
+                        width: '44px', height: '24px', flexShrink: 0,
+                        background: isListed ? 'var(--color-blue)' : 'rgba(0,0,0,0.15)',
+                        borderRadius: '9999px', border: 'none', cursor: partnerSaving ? 'wait' : 'pointer',
+                        position: 'relative', transition: 'background 0.2s',
+                        opacity: partnerProfile === undefined ? 0.5 : 1,
+                      }}
+                    >
+                      <div style={{
+                        position: 'absolute', top: '3px',
+                        left: isListed ? '23px' : '3px',
+                        width: '18px', height: '18px',
+                        background: '#fff', borderRadius: '9999px',
+                        transition: 'left 0.2s',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                      }} />
+                    </button>
+                  </div>
+
+                  {/* Status chip */}
+                  {isListed && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '7px', height: '7px', borderRadius: '9999px', background: '#2e8b57', flexShrink: 0 }} />
+                      <span style={{ fontSize: '12px', color: 'rgba(0,0,0,0.6)' }}>
+                        Listed — visible on <Link to="/partners" style={{ color: 'var(--color-blue)', textDecoration: 'none', fontWeight: 600 }}>fadejunkie.com/partners</Link>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Data & privacy */}
               {active === 'data' && (
                 <div style={{
@@ -246,6 +339,7 @@ export default function AccountSettings() {
                   {([
                     ['profile', 'Profile'],
                     ['study', 'Study'],
+                    ['partner', 'Partnership'],
                     ['data', 'Data'],
                   ] as [Section, string][]).map(([id, label]) => (
                     <button
