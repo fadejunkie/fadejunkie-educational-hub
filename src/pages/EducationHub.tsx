@@ -4,9 +4,25 @@ import { SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react'
 
 // ── Mini embeds ────────────────────────────────────────────────────────────
 
+const FLASH_PREVIEW = [
+  {
+    q: 'Most effective way to sanitize metal implements between clients?',
+    a: 'An EPA-registered hospital disinfectant, minimum 10 minutes contact.',
+  },
+  {
+    q: 'What is the definition of disinfection?',
+    a: 'Destroying most organisms on non-living surfaces using an EPA-registered chemical.',
+  },
+  {
+    q: 'Which implements must be discarded after a single use?',
+    a: 'Single-use items such as razors, neck strips, and cotton rounds.',
+  },
+]
+
 function MiniFlashcardEmbed({ onMin }: { onMin: () => void }) {
   const [flipped, setFlipped] = useState(false)
-  const [i, setI] = useState(3)
+  const [idx, setIdx] = useState(0)
+  const card = FLASH_PREVIEW[idx]
   return (
     <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: 14, marginTop: 8 }}>
       {/* Embed header */}
@@ -39,23 +55,23 @@ function MiniFlashcardEmbed({ onMin }: { onMin: () => void }) {
           </div>
           <div style={{ height: 8 }} />
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-black-95)', lineHeight: 1.35 }}>
-            {flipped
-              ? 'An EPA-registered hospital disinfectant, minimum 10 minutes contact.'
-              : 'Most effective way to sanitize metal implements between clients?'}
+            {flipped ? card.a : card.q}
           </div>
         </div>
       </div>
       {/* Footer */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, fontSize: 11, color: 'rgba(0,0,0,0.5)' }}>
-        <span>{i} / 300</span>
+        <span>{idx + 1} / 3</span>
         <div style={{ display: 'flex', gap: 6 }}>
           <button
-            onClick={(e) => { e.stopPropagation(); setI(Math.max(1, i - 1)); setFlipped(false) }}
-            style={{ padding: '4px 10px', fontSize: 12, border: '1px solid rgba(0,0,0,0.15)', borderRadius: 6, background: '#fff', cursor: 'pointer', color: 'var(--color-black-95)' }}
+            onClick={(e) => { e.stopPropagation(); setIdx(Math.max(0, idx - 1)); setFlipped(false) }}
+            disabled={idx === 0}
+            style={{ padding: '4px 10px', fontSize: 12, border: '1px solid rgba(0,0,0,0.15)', borderRadius: 6, background: '#fff', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? 'rgba(0,0,0,0.25)' : 'var(--color-black-95)' }}
           >←</button>
           <button
-            onClick={(e) => { e.stopPropagation(); setI(i + 1); setFlipped(false) }}
-            style={{ padding: '4px 10px', fontSize: 12, border: '1px solid rgba(0,0,0,0.15)', borderRadius: 6, background: '#fff', cursor: 'pointer', color: 'var(--color-black-95)' }}
+            onClick={(e) => { e.stopPropagation(); setIdx(Math.min(2, idx + 1)); setFlipped(false) }}
+            disabled={idx === 2}
+            style={{ padding: '4px 10px', fontSize: 12, border: '1px solid rgba(0,0,0,0.15)', borderRadius: 6, background: '#fff', cursor: idx === 2 ? 'default' : 'pointer', color: idx === 2 ? 'rgba(0,0,0,0.25)' : 'var(--color-black-95)' }}
           >→</button>
           <Link to="/education/flash" style={{ padding: '4px 10px', fontSize: 12, background: 'var(--color-blue)', color: '#fff', borderRadius: 6, textDecoration: 'none', fontWeight: 600 }}>
             Open full
@@ -66,43 +82,103 @@ function MiniFlashcardEmbed({ onMin }: { onMin: () => void }) {
   )
 }
 
+const QUIZ_PREVIEW: { q: string; choices: [string, string][]; correct: string }[] = [
+  {
+    q: 'Which is the most effective method for sanitizing metal implements?',
+    choices: [['A', 'Wiping with isopropyl alcohol'], ['B', 'EPA-registered hospital disinfectant, 10 min'], ['C', 'Soap and warm water'], ['D', 'UV light only']],
+    correct: 'B',
+  },
+  {
+    q: 'How long must metal implements soak in disinfectant?',
+    choices: [['A', '2 minutes'], ['B', '5 minutes'], ['C', '10 minutes'], ['D', '30 minutes']],
+    correct: 'C',
+  },
+  {
+    q: 'What should you do with a single-use razor after use?',
+    choices: [['A', 'Wash and reuse'], ['B', 'Soak in disinfectant'], ['C', 'Store in a UV cabinet'], ['D', 'Discard immediately']],
+    correct: 'D',
+  },
+]
+
 function MiniQuizEmbed({ onMin }: { onMin: () => void }) {
-  const [picked, setPicked] = useState<string | null>(null)
-  const correct = 'B'
+  const [step, setStep] = useState(0)           // 0-2 = questions, 3 = results
+  const [picks, setPicks] = useState<string[]>([])
+
+  const q = QUIZ_PREVIEW[step]
+  const currentPick = picks[step] ?? null
+  const revealed = currentPick !== null
+
+  function pickAnswer(letter: string) {
+    if (revealed) return
+    const next = [...picks]
+    next[step] = letter
+    setPicks(next)
+  }
+
+  function advance() {
+    if (step < 2) setStep(step + 1)
+    else setStep(3)
+  }
+
+  const score = picks.filter((p, i) => p === QUIZ_PREVIEW[i].correct).length
+  const pct = Math.round((score / 3) * 100)
+
+  // Results card
+  if (step === 3) {
+    return (
+      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: 14, marginTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: 1, color: 'var(--color-blue)', fontWeight: 700 }}>Mini quiz</span>
+            <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.4)' }}>· Sanitation</span>
+          </div>
+          <button onClick={onMin} aria-label="Minimize" style={{ background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 4, width: 24, height: 24, fontSize: 14, lineHeight: 1, color: 'rgba(0,0,0,0.5)', cursor: 'pointer', padding: 0 }}>–</button>
+        </div>
+        <div style={{ textAlign: 'center', padding: '20px 0 24px' }}>
+          <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-1px', color: score >= 2 ? '#2e8b57' : '#c4492a' }}>
+            {score} / 3
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(0,0,0,0.5)', marginTop: 4 }}>{pct}% · Sanitation preview</div>
+          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.38)', marginTop: 8 }}>
+            {score === 3 ? 'Perfect! You nailed it.' : score === 2 ? 'Almost there — one more push.' : 'Keep drilling — you\'ve got this.'}
+          </div>
+        </div>
+        <Link
+          to="/education/quiz"
+          style={{ display: 'block', textAlign: 'center', padding: '9px 0', fontSize: 13, background: 'var(--color-blue)', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 700 }}
+        >
+          Start Studying →
+        </Link>
+      </div>
+    )
+  }
+
+  // Question card
   return (
     <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: 14, marginTop: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: 1, color: 'var(--color-blue)', fontWeight: 700 }}>Try a question</span>
-          <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.4)' }}>· Sanitation · 1/3</span>
+          <span style={{ fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: 1, color: 'var(--color-blue)', fontWeight: 700 }}>Mini quiz</span>
+          <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.4)' }}>· Sanitation · {step + 1}/3</span>
         </div>
-        <button
-          onClick={onMin}
-          aria-label="Minimize"
-          style={{ background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 4, width: 24, height: 24, fontSize: 14, lineHeight: 1, color: 'rgba(0,0,0,0.5)', cursor: 'pointer', padding: 0 }}
-        >
-          –
-        </button>
+        <button onClick={onMin} aria-label="Minimize" style={{ background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 4, width: 24, height: 24, fontSize: 14, lineHeight: 1, color: 'rgba(0,0,0,0.5)', cursor: 'pointer', padding: 0 }}>–</button>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-black-95)' }}>
-        Which is the most effective method for sanitizing metal implements?
-      </div>
+      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: 'var(--color-black-95)' }}>{q.q}</div>
       <div style={{ height: 10 }} />
       <div style={{ display: 'grid', gap: 6 }}>
-        {([['A', 'Wiping with isopropyl alcohol'], ['B', 'EPA-registered hospital disinfectant, 10 min'], ['C', 'Soap and warm water'], ['D', 'UV light only']] as [string, string][]).map(([l, t]) => {
-          const isPicked = picked === l
-          const reveal = picked !== null
-          const isCorrect = reveal && l === correct
-          const isWrong = reveal && isPicked && l !== correct
+        {q.choices.map(([l, t]) => {
+          const isPicked = currentPick === l
+          const isCorrect = revealed && l === q.correct
+          const isWrong = revealed && isPicked && l !== q.correct
           return (
             <div
               key={l}
-              onClick={() => !reveal && setPicked(l)}
+              onClick={() => pickAnswer(l)}
               style={{
                 padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'center',
                 border: `1px solid ${isCorrect ? '#2e8b57' : isWrong ? '#c4492a' : isPicked ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)'}`,
                 background: isCorrect ? 'rgba(46,139,87,0.08)' : isWrong ? 'rgba(196,73,42,0.08)' : isPicked ? 'rgba(0,117,222,0.06)' : '#fff',
-                borderRadius: 6, cursor: reveal ? 'default' : 'pointer',
+                borderRadius: 6, cursor: revealed ? 'default' : 'pointer',
               }}
             >
               <div style={{ width: 22, height: 22, borderRadius: 999, background: 'rgba(0,0,0,0.06)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{l}</div>
@@ -113,16 +189,16 @@ function MiniQuizEmbed({ onMin }: { onMin: () => void }) {
           )
         })}
       </div>
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 10 }}>
-        {picked && (
-          <button onClick={() => setPicked(null)} style={{ padding: '5px 12px', fontSize: 11, border: '1px solid rgba(0,0,0,0.15)', borderRadius: 6, background: '#fff', cursor: 'pointer', color: 'var(--color-black-95)' }}>
-            Reset
+      {revealed && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+          <button
+            onClick={advance}
+            style={{ padding: '6px 16px', fontSize: 12, background: 'var(--color-blue)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700 }}
+          >
+            {step < 2 ? 'Next →' : 'See results →'}
           </button>
-        )}
-        <Link to="/education/quiz" style={{ padding: '5px 12px', fontSize: 11, background: 'var(--color-blue)', color: '#fff', borderRadius: 6, textDecoration: 'none', fontWeight: 600 }}>
-          Take the full quiz →
-        </Link>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -231,7 +307,7 @@ function ModeEmbedDesktop() {
                 <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', marginTop: 4 }}>{r.s}</div>
                 {!r.soon && (
                   <div style={{ marginTop: 10, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 700, color: isOpen ? 'var(--color-blue)' : 'rgba(0,0,0,0.38)' }}>
-                    {isOpen ? '← showing preview' : 'Try inline →'}
+                    {isOpen ? 'showing preview →' : 'Try inline →'}
                   </div>
                 )}
               </div>
@@ -248,18 +324,7 @@ function ModeEmbedDesktop() {
       {/* Right: widget panel */}
       <div style={{ position: 'sticky', top: 88 }}>
         {Embed ? (
-          <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 12, padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1, color: 'var(--color-blue)', fontWeight: 700 }}>Inline preview</div>
-              <button
-                onClick={() => setOpen(null)}
-                style={{ background: 'transparent', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 4, padding: '4px 10px', fontSize: 11, color: 'rgba(0,0,0,0.5)', cursor: 'pointer' }}
-              >
-                Minimize
-              </button>
-            </div>
-            <Embed onMin={() => setOpen(null)} />
-          </div>
+          <Embed onMin={() => setOpen(null)} />
         ) : (
           <div
             style={{
