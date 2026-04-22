@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.local
+
+.vercel
+
+# Session / tooling artifacts
+.claude/
+.paul/
+fadejunkie-handoff.zip
+handoff-extract/

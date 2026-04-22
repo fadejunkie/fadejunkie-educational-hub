@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FadeJunkie Educational Hub — Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper:    #f6f5f4;
+      --paper-2:  #eceae6;
+      --ink:      #1a1917;
+      --muted:    #615d59;
+      --soft:     #a39e98;
+      --rule:     rgba(0,0,0,0.10);
+      --accent:   #0075de;
+      --accent-t: rgba(0,117,222,0.08);
+      --link:     #0057b3;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Geist', sans-serif;
+      padding: 48px 32px;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+    .page-eyebrow {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .page-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .page-sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 40px;
+      line-height: 1.6;
+      max-width: 560px;
+    }
+    .planned-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      color: var(--soft);
+      background: rgba(0,0,0,0.04);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 4px 10px;
+      margin-bottom: 32px;
+    }
+    .planned-note::before {
+      content: "";
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .diagram-section { margin-bottom: 48px; }
+    .diagram-eyebrow {
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--soft);
+      margin-bottom: 6px;
+    }
+    .diagram-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 16px;
+    }
+    .diagram-wrap {
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .diagram-wrap svg { display: block; max-width: 100%; }
+    .cards {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 0.9fr;
+      gap: 16px;
+      margin-top: 48px;
+    }
+    @media (max-width: 700px) { .cards { grid-template-columns: 1fr; } }
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 20px;
+    }
+    .card-eyebrow {
+      font-family: 'Geist Mono', monospace;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--soft);
+      margin-bottom: 10px;
+    }
+    .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-accent { background: var(--accent); }
+    .dot-ink    { background: var(--ink); }
+    .dot-muted  { background: var(--muted); }
+    .card h3 { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .card ul { padding-left: 0; list-style: none; }
+    .card li { font-size: 12px; color: var(--muted); padding: 3px 0; line-height: 1.5; }
+    .card li::before { content: "—"; margin-right: 6px; color: var(--soft); }
+    footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 1px solid var(--rule);
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      color: var(--soft);
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+
+<p class="page-eyebrow">fadejunkie / fadejunkie-educational-hub</p>
+<h1 class="page-title">System Architecture — Proposed</h1>
+<p class="page-sub">Component map and OAuth handshake for the planned stack. Dashed nodes are not yet built.</p>
+<span class="planned-note">PROPOSED — not yet implemented</span>
+
+<!-- ─────────────────────────────────────────────────────── DIAGRAM 1 -->
+<div class="diagram-section">
+  <p class="diagram-eyebrow">Diagram 01</p>
+  <p class="diagram-title">Component Architecture</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 748 484" xmlns="http://www.w3.org/2000/svg" style="min-width:660px;">
+    <defs>
+      <pattern id="d1" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="0.9" fill="rgba(26,25,23,0.10)"/>
+      </pattern>
+      <marker id="arr"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#615d59"/>
+      </marker>
+      <marker id="arr-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#0057b3"/>
+      </marker>
+    </defs>
+
+    <!-- bg -->
+    <rect width="748" height="484" fill="#f6f5f4"/>
+    <rect width="748" height="484" fill="url(#d1)" opacity="0.6"/>
+
+    <!-- AUTH ZONE boundary (dashed, accent) -->
+    <rect x="352" y="128" width="164" height="156" rx="8"
+          fill="rgba(0,117,222,0.04)" stroke="rgba(0,117,222,0.45)"
+          stroke-width="1" stroke-dasharray="4,4"/>
+    <rect x="372" y="120" width="72" height="14" rx="2" fill="#f6f5f4"/>
+    <text x="408" y="130" fill="rgba(0,117,222,0.65)" font-size="8"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.14em" font-weight="500">AUTH ZONE</text>
+
+    <!-- ── ARROWS first (z-order behind nodes) ── -->
+
+    <!-- 1. User → React App -->
+    <line x1="128" y1="248" x2="158" y2="248" stroke="#615d59" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="112" y="237" width="32" height="12" rx="2" fill="#f6f5f4"/>
+    <text x="128" y="246" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          text-anchor="middle" letter-spacing="0.06em">HTTP/S</text>
+
+    <!-- 2. CDN → React App -->
+    <line x1="232" y1="188" x2="232" y2="214" stroke="#615d59" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="208" y="196" width="36" height="12" rx="2" fill="#f6f5f4"/>
+    <text x="226" y="205" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          text-anchor="middle" letter-spacing="0.06em">SERVE</text>
+
+    <!-- 3. React App → Clerk (auth init) -->
+    <line x1="304" y1="232" x2="358" y2="162" stroke="#615d59" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="302" y="188" width="32" height="12" rx="2" fill="#f6f5f4"/>
+    <text x="318" y="197" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          text-anchor="middle" letter-spacing="0.06em">AUTH</text>
+
+    <!-- 4. Clerk → React App (JWT return, dashed) -->
+    <line x1="358" y1="174" x2="304" y2="252" stroke="#615d59" stroke-width="1"
+          stroke-dasharray="4,3" marker-end="url(#arr)"/>
+    <rect x="313" y="207" width="28" height="12" rx="2" fill="#f6f5f4"/>
+    <text x="327" y="216" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          text-anchor="middle" letter-spacing="0.06em">JWT</text>
+
+    <!-- 5. Clerk → Google (redirect, link-blue) -->
+    <line x1="438" y1="192" x2="438" y2="220" stroke="#0057b3" stroke-width="1" marker-end="url(#arr-link)"/>
+    <rect x="408" y="200" width="56" height="12" rx="2" fill="#f6f5f4"/>
+    <text x="436" y="209" fill="#0057b3" font-size="8" font-family="'Geist Mono',monospace"
+          text-anchor="middle" letter-spacing="0.06em">REDIRECT</text>
+
+    <!-- 6. Google → Clerk (token return, dashed link-blue) -->
+    <line x1="430" y1="224" x2="430" y2="196" stroke="#0057b3" stroke-width="1"
+          stroke-dasharray="4,3" marker-end="url(#arr-link)"/>
+
+    <!-- 7. React App → Convex (queries + realtime) -->
+    <line x1="304" y1="260" x2="542" y2="208" stroke="#615d59" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="386" y="224" width="64" height="12" rx="2" fill="#f6f5f4"/>
+    <text x="418" y="233" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          text-anchor="middle" letter-spacing="0.06em">QUERY + RT</text>
+
+    <!-- 8. Convex → Redis -->
+    <line x1="618" y1="228" x2="618" y2="258" stroke="#615d59" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="590" y="237" width="56" height="12" rx="2" fill="#f6f5f4"/>
+    <text x="618" y="246" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          text-anchor="middle" letter-spacing="0.06em">CACHE R/W</text>
+
+    <!-- ── NODES (masks first, then styled box, then labels) ── -->
+
+    <!-- 1. User (input) -->
+    <rect x="24" y="212" width="104" height="56" rx="6" fill="#f6f5f4"/>
+    <rect x="24" y="212" width="104" height="56" rx="6"
+          fill="rgba(97,93,89,0.10)" stroke="#a39e98" stroke-width="1"/>
+    <rect x="32" y="220" width="32" height="12" rx="2"
+          fill="transparent" stroke="rgba(163,158,152,0.40)" stroke-width="0.8"/>
+    <text x="48" y="229" fill="rgba(163,158,152,0.80)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">USER</text>
+    <text x="76" y="249" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Browser</text>
+    <text x="76" y="263" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">HTTP / HTTPS</text>
+
+    <!-- 2. Vercel CDN (external) -->
+    <rect x="160" y="140" width="144" height="48" rx="6" fill="#f6f5f4"/>
+    <rect x="160" y="140" width="144" height="48" rx="6"
+          fill="rgba(26,25,23,0.03)" stroke="rgba(26,25,23,0.28)" stroke-width="1"/>
+    <rect x="168" y="148" width="28" height="12" rx="2"
+          fill="transparent" stroke="rgba(26,25,23,0.28)" stroke-width="0.8"/>
+    <text x="182" y="157" fill="rgba(26,25,23,0.45)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">CDN</text>
+    <text x="232" y="167" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Vercel Edge</text>
+    <text x="232" y="181" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">static assets</text>
+
+    <!-- 3. React App (focal) -->
+    <rect x="160" y="216" width="144" height="64" rx="6" fill="#f6f5f4"/>
+    <rect x="160" y="216" width="144" height="64" rx="6"
+          fill="rgba(0,117,222,0.08)" stroke="#0075de" stroke-width="1.2"/>
+    <rect x="168" y="224" width="28" height="12" rx="2"
+          fill="transparent" stroke="rgba(0,117,222,0.40)" stroke-width="0.8"/>
+    <text x="182" y="233" fill="rgba(0,117,222,0.80)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">APP</text>
+    <text x="232" y="252" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">React + Vite</text>
+    <text x="232" y="268" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">fadejunkie.com</text>
+
+    <!-- 4. Clerk (backend, inside auth zone) -->
+    <rect x="360" y="140" width="148" height="52" rx="6" fill="#f6f5f4"/>
+    <rect x="360" y="140" width="148" height="52" rx="6"
+          fill="#ffffff" stroke="#1a1917" stroke-width="1"/>
+    <rect x="368" y="148" width="36" height="12" rx="2"
+          fill="transparent" stroke="rgba(26,25,23,0.40)" stroke-width="0.8"/>
+    <text x="386" y="157" fill="rgba(26,25,23,0.65)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">AUTH</text>
+    <text x="434" y="172" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Clerk</text>
+    <text x="434" y="186" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">JWT · Google OAuth</text>
+
+    <!-- 5. Google OAuth (external, inside auth zone) -->
+    <rect x="360" y="220" width="148" height="52" rx="6" fill="#f6f5f4"/>
+    <rect x="360" y="220" width="148" height="52" rx="6"
+          fill="rgba(26,25,23,0.03)" stroke="rgba(26,25,23,0.28)" stroke-width="1"/>
+    <rect x="368" y="228" width="44" height="12" rx="2"
+          fill="transparent" stroke="rgba(26,25,23,0.28)" stroke-width="0.8"/>
+    <text x="390" y="237" fill="rgba(26,25,23,0.45)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">OAUTH</text>
+    <text x="434" y="252" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Google</text>
+    <text x="434" y="266" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">accounts.google.com</text>
+
+    <!-- 6. Convex (focal) -->
+    <rect x="544" y="164" width="148" height="64" rx="6" fill="#f6f5f4"/>
+    <rect x="544" y="164" width="148" height="64" rx="6"
+          fill="rgba(0,117,222,0.08)" stroke="#0075de" stroke-width="1.2"/>
+    <rect x="552" y="172" width="52" height="12" rx="2"
+          fill="transparent" stroke="rgba(0,117,222,0.40)" stroke-width="0.8"/>
+    <text x="578" y="181" fill="rgba(0,117,222,0.80)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">BACKEND</text>
+    <text x="618" y="200" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Convex</text>
+    <text x="618" y="216" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">DB · Realtime · API</text>
+
+    <!-- 7. Redis (planned, dashed) -->
+    <rect x="544" y="260" width="148" height="52" rx="6" fill="#f6f5f4"/>
+    <rect x="544" y="260" width="148" height="52" rx="6"
+          fill="rgba(26,25,23,0.02)" stroke="rgba(26,25,23,0.20)"
+          stroke-width="1" stroke-dasharray="4,3"/>
+    <rect x="552" y="268" width="40" height="12" rx="2"
+          fill="transparent" stroke="rgba(26,25,23,0.20)" stroke-width="0.8"/>
+    <text x="572" y="277" fill="rgba(26,25,23,0.32)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">CACHE</text>
+    <text x="618" y="292" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Redis</text>
+    <text x="618" y="306" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">room state · leaderboard</text>
+
+    <!-- Merch (separate deploy, top-right, dashed) -->
+    <rect x="544" y="72" width="148" height="48" rx="6" fill="#f6f5f4"/>
+    <rect x="544" y="72" width="148" height="48" rx="6"
+          fill="rgba(26,25,23,0.02)" stroke="rgba(26,25,23,0.20)"
+          stroke-width="1" stroke-dasharray="4,3"/>
+    <rect x="552" y="80" width="28" height="12" rx="2"
+          fill="transparent" stroke="rgba(26,25,23,0.20)" stroke-width="0.8"/>
+    <text x="566" y="89" fill="rgba(26,25,23,0.32)" font-size="7"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.08em" font-weight="500">APP</text>
+    <text x="618" y="100" fill="#1a1917" font-size="11" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Merch Store</text>
+    <text x="618" y="113" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">merch.fadejunkie.com</text>
+
+    <!-- ── LEGEND ── -->
+    <line x1="24" y1="372" x2="724" y2="372" stroke="rgba(26,25,23,0.10)" stroke-width="0.8"/>
+    <text x="24" y="388" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          letter-spacing="0.14em" font-weight="500">LEGEND</text>
+
+    <rect x="88" y="378" width="14" height="10" rx="3" fill="rgba(0,117,222,0.08)" stroke="#0075de" stroke-width="1"/>
+    <text x="108" y="387" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">focal</text>
+
+    <rect x="164" y="378" width="14" height="10" rx="3" fill="#ffffff" stroke="#1a1917" stroke-width="1"/>
+    <text x="184" y="387" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">service</text>
+
+    <rect x="248" y="378" width="14" height="10" rx="3" fill="rgba(26,25,23,0.03)" stroke="rgba(26,25,23,0.28)" stroke-width="1"/>
+    <text x="268" y="387" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">external</text>
+
+    <rect x="344" y="378" width="14" height="10" rx="3" fill="rgba(26,25,23,0.02)" stroke="rgba(26,25,23,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="364" y="387" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">planned</text>
+
+    <line x1="440" y1="383" x2="460" y2="383" stroke="#615d59" stroke-width="1" marker-end="url(#arr)"/>
+    <text x="466" y="387" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">sync</text>
+
+    <line x1="516" y1="383" x2="536" y2="383" stroke="#615d59" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+    <text x="542" y="387" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">return</text>
+
+    <line x1="604" y1="383" x2="624" y2="383" stroke="#0057b3" stroke-width="1" marker-end="url(#arr-link)"/>
+    <text x="630" y="387" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">HTTP</text>
+
+  </svg>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── DIAGRAM 2 -->
+<div class="diagram-section">
+  <p class="diagram-eyebrow">Diagram 02</p>
+  <p class="diagram-title">Google OAuth Handshake — Clerk + Convex JWT Flow</p>
+  <div class="diagram-wrap">
+  <svg viewBox="0 0 880 748" xmlns="http://www.w3.org/2000/svg" style="min-width:720px;">
+    <defs>
+      <pattern id="d2" width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="0.9" fill="rgba(26,25,23,0.10)"/>
+      </pattern>
+      <marker id="a1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#615d59"/>
+      </marker>
+      <marker id="a2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0,8 3,0 6" fill="#0075de"/>
+      </marker>
+    </defs>
+
+    <!-- bg -->
+    <rect width="880" height="748" fill="#f6f5f4"/>
+    <rect width="880" height="748" fill="url(#d2)" opacity="0.6"/>
+
+    <!-- ── ACTOR BOXES ── -->
+    <!-- User cx=80 | App cx=220 | Clerk cx=380 | Google cx=540 | Convex cx=700 -->
+
+    <rect x="20"  y="56" width="120" height="44" rx="6" fill="#f6f5f4"/>
+    <rect x="20"  y="56" width="120" height="44" rx="6"
+          fill="rgba(97,93,89,0.10)" stroke="#a39e98" stroke-width="1"/>
+    <text x="80"  y="82" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">User</text>
+
+    <rect x="160" y="56" width="120" height="44" rx="6" fill="#f6f5f4"/>
+    <rect x="160" y="56" width="120" height="44" rx="6"
+          fill="rgba(0,117,222,0.08)" stroke="#0075de" stroke-width="1.2"/>
+    <text x="220" y="75" fill="#1a1917" font-size="11" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">FadeJunkie</text>
+    <text x="220" y="91" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">React App</text>
+
+    <rect x="320" y="56" width="120" height="44" rx="6" fill="#f6f5f4"/>
+    <rect x="320" y="56" width="120" height="44" rx="6"
+          fill="#ffffff" stroke="#1a1917" stroke-width="1"/>
+    <text x="380" y="82" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Clerk</text>
+
+    <rect x="480" y="56" width="120" height="44" rx="6" fill="#f6f5f4"/>
+    <rect x="480" y="56" width="120" height="44" rx="6"
+          fill="rgba(26,25,23,0.03)" stroke="rgba(26,25,23,0.28)" stroke-width="1"/>
+    <text x="540" y="75" fill="#1a1917" font-size="11" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Google</text>
+    <text x="540" y="91" fill="#615d59" font-size="9"
+          font-family="'Geist Mono',monospace" text-anchor="middle">OAuth 2.0</text>
+
+    <rect x="640" y="56" width="120" height="44" rx="6" fill="#f6f5f4"/>
+    <rect x="640" y="56" width="120" height="44" rx="6"
+          fill="rgba(0,117,222,0.08)" stroke="#0075de" stroke-width="1.2"/>
+    <text x="700" y="82" fill="#1a1917" font-size="12" font-weight="600"
+          font-family="'Geist',sans-serif" text-anchor="middle">Convex</text>
+
+    <!-- ── LIFELINES ── -->
+    <line x1="80"  y1="100" x2="80"  y2="660" stroke="rgba(26,25,23,0.18)" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="220" y1="100" x2="220" y2="660" stroke="rgba(26,25,23,0.18)" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="380" y1="100" x2="380" y2="660" stroke="rgba(26,25,23,0.18)" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="540" y1="100" x2="540" y2="660" stroke="rgba(26,25,23,0.18)" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="700" y1="100" x2="700" y2="660" stroke="rgba(26,25,23,0.18)" stroke-width="1" stroke-dasharray="3,3"/>
+
+    <!-- ── ACTIVATION BARS ── -->
+    <!-- Clerk: y=188–428 -->
+    <rect x="376" y="188" width="8" height="240" fill="rgba(26,25,23,0.06)" stroke="#a39e98" stroke-width="0.8"/>
+    <!-- Google: y=236–332 -->
+    <rect x="536" y="236" width="8" height="96"  fill="rgba(26,25,23,0.06)" stroke="#a39e98" stroke-width="0.8"/>
+    <!-- Convex: y=476–572 -->
+    <rect x="696" y="476" width="8" height="96"  fill="rgba(26,25,23,0.06)" stroke="#a39e98" stroke-width="0.8"/>
+
+    <!-- ── MESSAGES ── -->
+
+    <!-- 1. User → App: SIGN IN WITH GOOGLE -->
+    <line x1="80" y1="140" x2="218" y2="140" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <rect x="96" y="128" width="88" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="140" y="138" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">SIGN IN WITH GOOGLE</text>
+
+    <!-- 2. App → Clerk: INITIATE OAUTH -->
+    <line x1="220" y1="188" x2="374" y2="188" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <rect x="252" y="176" width="80" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="292" y="186" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">INITIATE OAUTH</text>
+
+    <!-- 3. Clerk → Google: OAUTH REDIRECT -->
+    <line x1="384" y1="236" x2="534" y2="236" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <rect x="416" y="224" width="84" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="458" y="234" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">OAUTH REDIRECT</text>
+
+    <!-- 4. Google self-loop: AUTHENTICATE USER -->
+    <path d="M 544 284 L 572 284 L 572 316 L 544 316"
+          fill="none" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <rect x="576" y="290" width="88" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="620" y="300" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">AUTHENTICATE USER</text>
+
+    <!-- 5. Google → Clerk: AUTH CODE (return, dashed) -->
+    <line x1="534" y1="332" x2="384" y2="332" stroke="#615d59" stroke-width="1"
+          stroke-dasharray="4,3" marker-end="url(#a1)"/>
+    <rect x="428" y="320" width="60" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="458" y="330" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">AUTH CODE</text>
+
+    <!-- 6. Clerk self-loop: EXCHANGE CODE -->
+    <path d="M 384 380 L 412 380 L 412 412 L 384 412"
+          fill="none" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <rect x="416" y="386" width="80" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="456" y="396" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">EXCHANGE CODE</text>
+
+    <!-- 7. Clerk → App: JWT SESSION [ACCENT] -->
+    <line x1="374" y1="428" x2="222" y2="428" stroke="#0075de" stroke-width="1.5" marker-end="url(#a2)"/>
+    <rect x="258" y="416" width="76" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="296" y="426" fill="#0075de" font-size="8" font-weight="600"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">JWT SESSION</text>
+
+    <!-- 8. App → Convex: QUERY + JWT -->
+    <line x1="220" y1="476" x2="694" y2="476" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <rect x="416" y="464" width="68" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="450" y="474" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">QUERY + JWT</text>
+
+    <!-- 9. Convex self-loop: VERIFY JWT (JWKS) -->
+    <path d="M 704 524 L 732 524 L 732 556 L 704 556"
+          fill="none" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <rect x="736" y="530" width="68" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="770" y="540" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">VERIFY JWT</text>
+    <text x="770" y="556" fill="#a39e98" font-size="8"
+          font-family="'Instrument Serif',serif" font-style="italic"
+          text-anchor="middle">Clerk JWKS</text>
+
+    <!-- 10. Convex → App: USER DATA [ACCENT, dashed return] -->
+    <line x1="694" y1="572" x2="222" y2="572" stroke="#0075de" stroke-width="1.5"
+          stroke-dasharray="5,3" marker-end="url(#a2)"/>
+    <rect x="420" y="560" width="64" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="452" y="570" fill="#0075de" font-size="8" font-weight="600"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">USER DATA</text>
+
+    <!-- 11. App → User: RENDER AUTH STATE -->
+    <line x1="218" y1="620" x2="82" y2="620" stroke="#615d59" stroke-width="1"
+          stroke-dasharray="4,3" marker-end="url(#a1)"/>
+    <rect x="96" y="608" width="88" height="13" rx="2" fill="#f6f5f4"/>
+    <text x="140" y="618" fill="#1a1917" font-size="8" font-weight="500"
+          font-family="'Geist Mono',monospace" text-anchor="middle"
+          letter-spacing="0.05em">RENDER AUTH STATE</text>
+
+    <!-- ── LEGEND ── -->
+    <line x1="24" y1="688" x2="856" y2="688" stroke="rgba(26,25,23,0.10)" stroke-width="0.8"/>
+    <text x="24" y="704" fill="#a39e98" font-size="8" font-family="'Geist Mono',monospace"
+          letter-spacing="0.14em" font-weight="500">LEGEND</text>
+
+    <line x1="88"  y1="700" x2="108" y2="700" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <text x="114" y="704" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">request</text>
+
+    <line x1="196" y1="700" x2="216" y2="700" stroke="#615d59" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#a1)"/>
+    <text x="222" y="704" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">response</text>
+
+    <line x1="316" y1="700" x2="336" y2="700" stroke="#0075de" stroke-width="1.5" marker-end="url(#a2)"/>
+    <text x="342" y="704" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">key auth event</text>
+
+    <path d="M 460 696 L 476 696 L 476 708 L 460 708" fill="none" stroke="#615d59" stroke-width="1" marker-end="url(#a1)"/>
+    <text x="482" y="704" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">internal process</text>
+
+    <rect x="596" y="695" width="8" height="12" fill="rgba(26,25,23,0.06)" stroke="#a39e98" stroke-width="0.8"/>
+    <text x="610" y="704" fill="#615d59" font-size="9" font-family="'Geist Mono',monospace">active</text>
+
+  </svg>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────── SUMMARY CARDS -->
+<div class="cards">
+  <div class="card">
+    <p class="card-eyebrow">Frontend</p>
+    <div class="card-header">
+      <span class="card-dot dot-accent"></span>
+      <h3>React + Vite on Vercel</h3>
+    </div>
+    <ul>
+      <li>fadejunkie.com — main app</li>
+      <li>merch.fadejunkie.com — separate deploy</li>
+      <li>Vercel Edge serves static assets globally</li>
+      <li>React Router for client-side routing</li>
+    </ul>
+  </div>
+  <div class="card">
+    <p class="card-eyebrow">Auth + Identity</p>
+    <div class="card-header">
+      <span class="card-dot dot-ink"></span>
+      <h3>Clerk + Google OAuth</h3>
+    </div>
+    <ul>
+      <li>Clerk handles the full OAuth handshake</li>
+      <li>Google as identity provider — one-tap sign-in</li>
+      <li>Clerk issues short-lived JWTs to the app</li>
+      <li>Convex verifies JWTs via Clerk's JWKS endpoint</li>
+    </ul>
+  </div>
+  <div class="card">
+    <p class="card-eyebrow">Backend + Data (planned)</p>
+    <div class="card-header">
+      <span class="card-dot dot-muted"></span>
+      <h3>Convex + Redis</h3>
+    </div>
+    <ul>
+      <li>Convex — isolated deployment, not shared</li>
+      <li>Real-time subscriptions drive Group Mode</li>
+      <li>6 tables: users, progress, sessions, rooms, players, answers</li>
+      <li>Redis — room state + leaderboard hot cache (Phase 2+)</li>
+    </ul>
+  </div>
+</div>
+
+<footer>fadejunkie-educational-hub · proposed architecture · 2026-04-21 · diagram-design skill</footer>
+
+</body>
+</html>

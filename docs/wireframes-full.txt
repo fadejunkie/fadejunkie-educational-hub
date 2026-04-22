@@ -1,0 +1,3452 @@
+=== lib/wire.jsx (11381 chars) ===
+// Wireframe primitives — grayscale, tight to FadeJunkie type scale.
+// Real type system, fake visuals. Dashed = placeholder imagery, solid = real component.
+
+const WIRE = {
+  ink: 'rgba(0,0,0,0.88)',
+  ink2: 'rgba(0,0,0,0.6)',
+  ink3: 'rgba(0,0,0,0.38)',
+  line: 'rgba(0,0,0,0.12)',
+  lineHard: 'rgba(0,0,0,0.3)',
+  bg: '#ffffff',
+  bgAlt: '#f4f3f1',
+  bgDark: '#31302e',
+  fill: 'rgba(0,0,0,0.04)',
+  fill2: 'rgba(0,0,0,0.08)',
+  accent: '#0075de',
+  accentSoft: '#e8f2fc',
+  note: '#fef4a8',
+  noteInk: '#5a4a2a',
+};
+
+// Base fills a square region with diagonal stripes — our "placeholder image" glyph
+function Placeholder({ label, style = {}, ratio, h }) {
+  return (
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      aspectRatio: ratio,
+      height: h,
+      background: `repeating-linear-gradient(135deg, ${WIRE.fill} 0 6px, transparent 6px 12px)`,
+      border: `1px dashed ${WIRE.lineHard}`,
+      borderRadius: 4,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: WIRE.ink3,
+      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+      fontSize: 10,
+      letterSpacing: 0.3,
+      textTransform: 'uppercase',
+      ...style,
+    }}>{label}</div>
+  );
+}
+
+// Solid grayscale block for "text block" wireframe lines
+function Lines({ count = 3, width = '100%', lastWidth = '70%', gap = 6, color = WIRE.line, h = 6 }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} style={{
+          height: h,
+          width: i === count - 1 ? lastWidth : width,
+          background: color,
+          borderRadius: 2,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// A single solid bar representing a heading
+function Bar({ w = '60%', h = 14, color = WIRE.ink, style = {} }) {
+  return <div style={{ height: h, width: w, background: color, borderRadius: 3, ...style }} />;
+}
+
+// A pill badge
+function Pill({ children, color = WIRE.accent, bg = WIRE.accentSoft }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      fontSize: 10, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase',
+      color, background: bg, padding: '3px 8px', borderRadius: 9999, lineHeight: 1.2,
+    }}>{children}</span>
+  );
+}
+
+// A button
+function Btn({ children, primary, ghost, full, size = 'md' }) {
+  const pad = size === 'lg' ? '10px 18px' : size === 'sm' ? '5px 10px' : '8px 14px';
+  const fs = size === 'lg' ? 14 : size === 'sm' ? 11 : 12;
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+      padding: pad, fontSize: fs, fontWeight: 600, borderRadius: 4,
+      background: primary ? WIRE.accent : ghost ? 'transparent' : WIRE.fill,
+      color: primary ? '#fff' : WIRE.ink,
+      border: ghost ? `1px solid ${WIRE.line}` : 'none',
+      width: full ? '100%' : 'auto',
+      whiteSpace: 'nowrap',
+    }}>{children}</div>
+  );
+}
+
+// Card wrapper
+function Card({ children, pad = 16, style = {}, alt, dashed }) {
+  return (
+    <div style={{
+      background: alt ? WIRE.bgAlt : '#fff',
+      border: dashed ? `1px dashed ${WIRE.lineHard}` : `1px solid ${WIRE.line}`,
+      borderRadius: 8,
+      padding: pad,
+      boxShadow: dashed ? 'none' : '0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03)',
+      ...style,
+    }}>{children}</div>
+  );
+}
+
+// Margin annotation — shown when annotations toggle is on
+function Note({ children, side = 'right', top, width = 140 }) {
+  const isRight = side === 'right';
+  return (
+    <div data-wire-note style={{
+      position: 'absolute',
+      top,
+      [isRight ? 'left' : 'right']: '100%',
+      [isRight ? 'marginLeft' : 'marginRight']: 16,
+      width,
+      padding: '8px 10px',
+      background: WIRE.note,
+      color: WIRE.noteInk,
+      fontFamily: '"Caveat", "Marker Felt", cursive',
+      fontSize: 14,
+      lineHeight: 1.25,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+      transform: `rotate(${isRight ? -1.5 : 1.5}deg)`,
+      pointerEvents: 'none',
+      zIndex: 3,
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 14,
+        [isRight ? 'left' : 'right']: -16,
+        width: 16, height: 1,
+        borderTop: `1px dashed ${WIRE.noteInk}`,
+        opacity: 0.5,
+      }} />
+      {children}
+    </div>
+  );
+}
+
+// Sticky nav wireframe
+// props:
+//   logged — shows avatar
+//   title — breadcrumb after logo (e.g. "Education Hub")
+//   open  — shows the open hamburger drawer overlay
+//   menu  — shows the avatar-dropdown (Profile / Account / Sign out)
+function NavBar({ logged, title, open, menu }) {
+  return (
+    <div style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 20px',
+        borderBottom: `1px solid ${WIRE.line}`,
+        background: '#fff',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img src="assets/fj-logo-black.png" alt="fj" style={{ height: 22, width: 'auto', opacity: 0.88 }} />
+          {title && <span style={{ fontSize: 12, color: WIRE.ink3, borderLeft: `1px solid ${WIRE.line}`, paddingLeft: 10, marginLeft: 2 }}>{title}</span>}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+          {logged && (
+            <div style={{
+              width: 26, height: 26, borderRadius: 13, background: WIRE.fill2,
+              border: menu ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+            }} />
+          )}
+          {/* Hamburger — shows X when open */}
+          {open ? (
+            <div style={{ width: 22, height: 22, position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 10, left: 0, right: 0, height: 1.5, background: WIRE.ink, transform: 'rotate(45deg)' }} />
+              <div style={{ position: 'absolute', top: 10, left: 0, right: 0, height: 1.5, background: WIRE.ink, transform: 'rotate(-45deg)' }} />
+            </div>
+          ) : (
+            <div style={{ width: 22, height: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3 }}>
+              <div style={{ height: 1.5, background: WIRE.ink }} />
+              <div style={{ height: 1.5, background: WIRE.ink }} />
+              <div style={{ height: 1.5, background: WIRE.ink }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Avatar dropdown */}
+      {menu && (
+        <div style={{
+          position: 'absolute', top: '100%', right: 16, marginTop: 8, width: 220,
+          background: '#fff', border: `1px solid ${WIRE.line}`, borderRadius: 10,
+          boxShadow: '0 4px 10px rgba(0,0,0,0.04), 0 12px 28px rgba(0,0,0,0.05)',
+          zIndex: 3, overflow: 'hidden',
+        }}>
+          <div style={{ padding: '12px 14px', borderBottom: `1px solid ${WIRE.line}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>Marcus Reyes</div>
+            <div style={{ fontSize: 11, color: WIRE.ink3 }}>marcus@…</div>
+          </div>
+          {['Profile', 'Account Settings', 'Starred cards', 'Sign out'].map((t, i, a) => (
+            <div key={t} style={{
+              padding: '10px 14px', fontSize: 13,
+              color: t === 'Sign out' ? '#c4492a' : WIRE.ink,
+              borderTop: i === a.length - 1 ? `1px solid ${WIRE.line}` : 'none',
+            }}>{t}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Hamburger drawer overlay */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          background: '#fff', borderBottom: `1px solid ${WIRE.line}`,
+          boxShadow: '0 12px 28px rgba(0,0,0,0.06)',
+          zIndex: 3,
+        }}>
+          <div style={{ padding: '8px 0' }}>
+            {[
+              ['Education Hub', 'Study for the Texas board'],
+              ['Partners', 'Schools, brands, distributors'],
+              ['Barber', 'Coming soon', true],
+              ['Shop', 'Coming soon', true],
+            ].map(([t, s, dim]) => (
+              <div key={t} style={{
+                padding: '14px 20px', borderTop: `1px solid ${WIRE.line}`,
+                opacity: dim ? 0.5 : 1,
+              }}>
+                <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: -0.2 }}>{t}</div>
+                <div style={{ fontSize: 12, color: WIRE.ink3, marginTop: 2 }}>{s}</div>
+              </div>
+            ))}
+            {logged ? (
+              <div style={{ borderTop: `1px solid ${WIRE.line}`, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 999, background: WIRE.fill2, border: `1px solid ${WIRE.line}` }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>Marcus Reyes</div>
+                  <div style={{ fontSize: 11, color: WIRE.ink3 }}>Profile · Account · Sign out</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ borderTop: `1px solid ${WIRE.line}`, padding: '14px 20px' }}>
+                <Btn primary full>Sign in with Google</Btn>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <div style={{
+      background: WIRE.bgAlt,
+      padding: '28px 20px 24px',
+      borderTop: `1px solid ${WIRE.line}`,
+      display: 'flex', flexDirection: 'column', gap: 14,
+    }}>
+      <img src="assets/fj-nametag-black.png" alt="fadejunkie" style={{ height: 65, width: 1240, maxWidth: '100%', objectFit: 'contain', opacity: 0.9 }} />
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 11, color: WIRE.ink2 }}>
+        <span>Education Hub</span>
+        <span>Partners</span>
+        <span style={{ color: WIRE.ink3 }}>Barber · Soon</span>
+        <span style={{ marginLeft: 'auto' }}>partners@fadejunkie.com</span>
+      </div>
+      <div style={{ fontSize: 10, color: WIRE.ink3, borderTop: `1px solid ${WIRE.line}`, paddingTop: 10 }}>© 2026 FadeJunkie</div>
+    </div>
+  );
+}
+
+// Device frame — gives wireframes a consistent canvas at mobile OR desktop scale
+function Frame({ children, w, h, label }) {
+  return (
+    <div style={{
+      width: w, height: h, background: '#fff',
+      border: `1px solid ${WIRE.line}`,
+      position: 'relative', overflow: 'hidden',
+      fontFamily: "'Inter', -apple-system, system-ui, sans-serif",
+      color: WIRE.ink,
+    }}>
+      <div style={{ height: '100%', overflowY: 'auto' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Full-bleed scroll container for a page
+function Page({ children, dark, alt }) {
+  return <div style={{ background: dark ? WIRE.bgDark : alt ? WIRE.bgAlt : '#fff', minHeight: '100%', color: dark ? '#fff' : WIRE.ink }}>{children}</div>;
+}
+
+// Section wrapper
+function Sec({ children, alt, dark, pad = 32, style = {} }) {
+  return (
+    <section style={{
+      background: dark ? WIRE.bgDark : alt ? WIRE.bgAlt : '#fff',
+      color: dark ? '#fff' : WIRE.ink,
+      padding: `${pad}px 20px`,
+      position: 'relative',
+      ...style,
+    }}>{children}</section>
+  );
+}
+
+Object.assign(window, { WIRE, Placeholder, Lines, Bar, Pill, Btn, Card, Note, NavBar, Footer, Frame, Page, Sec });
+
+
+=== lib/home.jsx (37621 chars) ===
+// Homepage wireframes — 3 variations. Each exports a mobile + desktop.
+
+// ── V1: Classic stacked (matches existing lander structure) ──────────────
+function HomeV1({ annot, dense }) {
+  return (
+    <Page>
+      <NavBar />
+      {/* Hero */}
+      <Sec pad={28} style={{ textAlign: 'center' }}>
+        <Pill>By Barbers, For Barbers</Pill>
+        <div style={{ height: 16 }} />
+        <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: -1.4, lineHeight: 1.02 }}>
+          A barber brand<br/>built in the shop.
+        </div>
+        <div style={{ height: 14 }} />
+        <div style={{ color: WIRE.ink2, fontSize: 14, maxWidth: 320, margin: '0 auto' }}>
+          Choose your path. FadeJunkie is building tools for every corner of the barbershop.
+        </div>
+        <div style={{ height: 24 }} />
+        {/* Role cards — stacked on mobile */}
+        <div style={{ display: 'grid', gap: 10, textAlign: 'left' }}>
+          {[
+            { label: 'Student', desc: 'State board prep. Free.', active: true },
+            { label: 'Barber', desc: 'Tools for working pros.', tag: 'Soon' },
+            { label: 'Shop', desc: 'Merch built in the chair.', tag: 'Coming Soon', dim: true },
+          ].map(r => (
+            <div key={r.label} style={{
+              padding: 16,
+              borderRadius: 12,
+              border: r.active ? `1.5px solid ${WIRE.accent}` : `1px dashed ${WIRE.lineHard}`,
+              background: r.active ? WIRE.accentSoft : '#fff',
+              opacity: r.dim ? 0.55 : 1,
+              position: 'relative',
+            }}>
+              {r.tag && <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, color: WIRE.ink3, border: `1px solid ${WIRE.line}`, padding: '2px 7px', borderRadius: 999 }}>{r.tag}</span>}
+              <div style={{ width: 36, height: 36, borderRadius: 8, background: r.active ? 'rgba(0,117,222,0.12)' : WIRE.fill, marginBottom: 10 }} />
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{r.label}</div>
+              <div style={{ fontSize: 12, color: WIRE.ink2, marginTop: 3 }}>{r.desc}</div>
+              <div style={{ marginTop: 10, fontSize: 12, color: r.active ? WIRE.accent : WIRE.ink3, fontWeight: 600 }}>
+                {r.active ? 'Open Education Hub →' : r.tag === 'Soon' ? 'See what\'s coming' : ''}
+              </div>
+            </div>
+          ))}
+        </div>
+        {annot && <Note top={40} side="right" width={130}>hero = role picker, not "sign up"</Note>}
+      </Sec>
+
+      {/* Stats */}
+      <Sec alt pad={22}>
+        <div style={{ display: 'flex', justifyContent: 'space-around', gap: 10 }}>
+          {[['300+', 'Questions'], ['3', 'Modes'], ['Free', 'Always']].map(([v, l]) => (
+            <div key={v} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5 }}>{v}</div>
+              <div style={{ fontSize: 10, color: WIRE.ink2, marginTop: 2 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </Sec>
+
+      {/* Brand */}
+      <Sec pad={32}>
+        <Pill>The Brand</Pill>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -1 }}>More than merch.</div>
+        <div style={{ height: 10 }} />
+        <div style={{ color: WIRE.ink2, fontSize: 13 }}>
+          FadeJunkie started as a culture brand. We're growing it into a full platform: tools that help barbers study, earn, and connect.
+        </div>
+        <div style={{ height: 18 }} />
+        <div style={{ display: 'grid', gap: 10 }}>
+          {['Culture', 'Tools', 'Community'].map(p => (
+            <Card key={p}>
+              <Pill color={WIRE.ink2} bg={WIRE.fill}>{p}</Pill>
+              <div style={{ height: 10 }} />
+              <Bar w="80%" h={12} />
+              <div style={{ height: 8 }} />
+              <Lines count={3} />
+            </Card>
+          ))}
+        </div>
+      </Sec>
+
+      {/* Education Hub feature */}
+      <Sec alt pad={32} style={{ textAlign: 'center' }}>
+        <Pill>First Digital Product</Pill>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -1 }}>Pass your Texas<br/>State Board.</div>
+        <div style={{ height: 10 }} />
+        <div style={{ color: WIRE.ink2, fontSize: 13 }}>
+          Free study tools built from Texas curriculum and Milady materials.
+        </div>
+        <div style={{ height: 20 }} />
+        <div style={{ display: 'grid', gap: 10, textAlign: 'left' }}>
+          {[
+            ['Flashcards', 'Study at your own pace', false],
+            ['Practice Quiz', 'Simulate the real exam', false],
+            ['Group Mode', 'Study with your class', true],
+          ].map(([b, t, soon]) => (
+            <Card key={b} style={{ position: 'relative' }}>
+              {soon && <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: WIRE.ink2, background: WIRE.fill, padding: '2px 7px', borderRadius: 999 }}>Soon</span>}
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: WIRE.accentSoft, marginBottom: 10 }} />
+              <Pill color={WIRE.ink2} bg={WIRE.fill}>{b}</Pill>
+              <div style={{ height: 8 }} />
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{t}</div>
+              <div style={{ height: 6 }} />
+              <Lines count={2} />
+            </Card>
+          ))}
+        </div>
+        <div style={{ height: 20 }} />
+        <Btn primary size="lg">Open Education Hub →</Btn>
+      </Sec>
+
+      {/* Partners */}
+      <Sec pad={32}>
+        <Pill>Partners</Pill>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.9 }}>Built with<br/>the industry.</div>
+        <div style={{ height: 12 }} />
+        <Lines count={2} />
+        <div style={{ height: 16 }} />
+        <Btn ghost>View Partners</Btn>
+        <div style={{ height: 20 }} />
+        <Card alt pad={20} style={{ textAlign: 'center', borderRadius: 12 }}>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>Interested in partnering?</div>
+          <div style={{ height: 6 }} />
+          <div style={{ fontSize: 12, color: WIRE.ink2 }}>Schools, distributors, brands.</div>
+          <div style={{ height: 12 }} />
+          <Btn primary>Get in touch</Btn>
+        </Card>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+function HomeV1Desktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      {/* Hero */}
+      <Sec pad={80} style={{ textAlign: 'center', position: 'relative' }}>
+        <Pill>By Barbers, For Barbers</Pill>
+        <div style={{ height: 20 }} />
+        <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2.1, lineHeight: 1.0 }}>
+          A barber brand<br/>built in the shop.
+        </div>
+        <div style={{ height: 18 }} />
+        <div style={{ color: WIRE.ink2, fontSize: 18, maxWidth: 480, margin: '0 auto' }}>
+          Choose your path. FadeJunkie is building tools for every corner of the barbershop.
+        </div>
+        <div style={{ height: 40 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, textAlign: 'left', maxWidth: 880, margin: '0 auto' }}>
+          {[
+            { label: 'Student', desc: 'State board prep, flashcards, quizzes, and live group sessions — free.', active: true, cta: 'Open Education Hub →' },
+            { label: 'Barber', desc: 'Tools, resources, and community for working professionals.', tag: 'Soon', cta: 'See what\'s coming' },
+            { label: 'Shop', desc: 'FadeJunkie merch — streetwear built inside the chair.', tag: 'Coming Soon', dim: true, cta: 'Coming Soon' },
+          ].map(r => (
+            <div key={r.label} style={{
+              padding: 28,
+              borderRadius: 16,
+              border: r.active ? `1.5px solid ${WIRE.accent}` : `1px dashed ${WIRE.lineHard}`,
+              background: r.active ? WIRE.accentSoft : '#fff',
+              opacity: r.dim ? 0.55 : 1,
+              position: 'relative',
+              minHeight: 220,
+              display: 'flex', flexDirection: 'column',
+            }}>
+              {r.tag && <span style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6, color: WIRE.ink3, border: `1px solid ${WIRE.line}`, padding: '3px 10px', borderRadius: 999 }}>{r.tag}</span>}
+              <div style={{ width: 52, height: 52, borderRadius: 8, background: r.active ? 'rgba(0,117,222,0.12)' : WIRE.fill, marginBottom: 16 }} />
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{r.label}</div>
+              <div style={{ fontSize: 13, color: WIRE.ink2, marginTop: 6, lineHeight: 1.5 }}>{r.desc}</div>
+              <div style={{ marginTop: 'auto', paddingTop: 12, fontSize: 13, color: r.active ? WIRE.accent : WIRE.ink3, fontWeight: 600 }}>{r.cta}</div>
+            </div>
+          ))}
+        </div>
+        {annot && <Note top={140} side="left" width={170}>active card = current role. others = coming</Note>}
+      </Sec>
+
+      {/* Stats */}
+      <Sec alt pad={36}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 72 }}>
+          {[['300+', 'Practice questions'], ['3', 'Study modes'], ['Free', 'Always, for barbers']].map(([v, l]) => (
+            <div key={v} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1 }}>{v}</div>
+              <div style={{ fontSize: 13, color: WIRE.ink2, marginTop: 4 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </Sec>
+
+      {/* Brand */}
+      <Sec pad={80}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ maxWidth: 560, marginBottom: 40 }}>
+            <Pill>The Brand</Pill>
+            <div style={{ height: 14 }} />
+            <div style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1.5, lineHeight: 1 }}>More than merch.</div>
+            <div style={{ height: 14 }} />
+            <div style={{ color: WIRE.ink2, fontSize: 17 }}>
+              FadeJunkie started as a culture brand — streetwear for the shop, built with the same obsession barbers bring to every fade.
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {[
+              ['Culture', 'Built inside the shop'],
+              ['Tools', 'Built for the craft'],
+              ['Community', 'Built with the industry'],
+            ].map(([b, t]) => (
+              <Card key={b} pad={26}>
+                <Pill color={WIRE.ink2} bg={WIRE.fill}>{b}</Pill>
+                <div style={{ height: 14 }} />
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.2 }}>{t}</div>
+                <div style={{ height: 10 }} />
+                <Lines count={3} />
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Sec>
+
+      {/* Edu feature */}
+      <Sec alt pad={80} style={{ textAlign: 'center' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <Pill>First Digital Product</Pill>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1.5, lineHeight: 1 }}>Pass your Texas State Board.</div>
+          <div style={{ height: 14 }} />
+          <div style={{ color: WIRE.ink2, fontSize: 17, maxWidth: 580, margin: '0 auto' }}>
+            Free study tools built from Texas curriculum and Milady materials.
+          </div>
+          <div style={{ height: 36 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, textAlign: 'left' }}>
+            {[
+              ['Flashcards', 'Study at your own pace', false],
+              ['Practice Quiz', 'Simulate the real exam', false],
+              ['Group Mode', 'Study with your class', true],
+            ].map(([b, t, soon]) => (
+              <Card key={b} pad={26} style={{ position: 'relative' }}>
+                {soon && <span style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.6, color: WIRE.ink2, background: WIRE.fill, padding: '3px 10px', borderRadius: 999 }}>Coming Soon</span>}
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: WIRE.accentSoft, marginBottom: 16 }} />
+                <Pill color={WIRE.ink2} bg={WIRE.fill}>{b}</Pill>
+                <div style={{ height: 10 }} />
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.2 }}>{t}</div>
+                <div style={{ height: 8 }} />
+                <Lines count={3} />
+              </Card>
+            ))}
+          </div>
+          <div style={{ height: 32 }} />
+          <Btn primary size="lg">Open Education Hub →</Btn>
+        </div>
+      </Sec>
+
+      {/* Partners */}
+      <Sec pad={80}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
+          <div>
+            <Pill>Partners</Pill>
+            <div style={{ height: 14 }} />
+            <div style={{ fontSize: 44, fontWeight: 700, letterSpacing: -1.4, lineHeight: 1 }}>Built with the industry.</div>
+            <div style={{ height: 14 }} />
+            <Lines count={3} />
+            <div style={{ height: 20 }} />
+            <Btn ghost>View Partners</Btn>
+          </div>
+          <Card alt pad={36} style={{ textAlign: 'center', borderRadius: 16 }}>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.4 }}>Interested in partnering?</div>
+            <div style={{ height: 10 }} />
+            <div style={{ fontSize: 14, color: WIRE.ink2 }}>Schools, distributors, and barber brands — reach us directly.</div>
+            <div style={{ height: 18 }} />
+            <Btn primary>Get in touch</Btn>
+          </Card>
+        </div>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+// ── V2: Product-first — lead with the study tool, brand story second ─────
+function HomeV2({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={28}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>For Texas Barber Students</Pill>
+        <div style={{ height: 14 }} />
+        <div style={{ fontSize: 42, fontWeight: 700, letterSpacing: -1.6, lineHeight: 1.02 }}>
+          300 state board<br/>questions. Free.
+        </div>
+        <div style={{ height: 12 }} />
+        <div style={{ color: WIRE.ink2, fontSize: 14 }}>
+          Study between clients. Flip cards, run timed quizzes, or host your cohort.
+        </div>
+        <div style={{ height: 20 }} />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn primary size="lg">Start Studying</Btn>
+          <Btn ghost size="lg">How it works</Btn>
+        </div>
+        <div style={{ height: 24 }} />
+        {/* Product preview */}
+        <Placeholder label="Flashcard mock · front" h={200} />
+        {annot && <Note top={16} side="right" width={150}>lead with product, not brand story</Note>}
+      </Sec>
+
+      {/* Mode quick-pick */}
+      <Sec alt pad={28}>
+        <Bar w="40%" h={16} />
+        <div style={{ height: 4 }} />
+        <Bar w="70%" h={16} />
+        <div style={{ height: 16 }} />
+        <div style={{ display: 'grid', gap: 10 }}>
+          {[
+            ['Flashcards', '300 cards · 17 topics'],
+            ['Practice Quiz', '20 · 50 · 100 · 150'],
+            ['Group Mode', 'Live · with your class', 'Soon'],
+          ].map(([t, s, soon]) => (
+            <div key={t} style={{ background: '#fff', border: `1px solid ${WIRE.line}`, borderRadius: 8, padding: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 6, background: WIRE.accentSoft }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{t}</div>
+                <div style={{ fontSize: 11, color: WIRE.ink2 }}>{s}</div>
+              </div>
+              {soon ? <span style={{ fontSize: 9, textTransform: 'uppercase', color: WIRE.ink3 }}>{soon}</span> : <span style={{ color: WIRE.ink3 }}>→</span>}
+            </div>
+          ))}
+        </div>
+      </Sec>
+
+      {/* Brand block (demoted, but present) */}
+      <Sec pad={28}>
+        <Pill>The Brand</Pill>
+        <div style={{ height: 8 }} />
+        <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.8 }}>Not a startup. A shop.</div>
+        <div style={{ height: 10 }} />
+        <Lines count={4} />
+        <div style={{ height: 14 }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Placeholder label="shop photo" h={90} style={{ flex: 1 }} />
+          <Placeholder label="merch" h={90} style={{ flex: 1 }} />
+        </div>
+      </Sec>
+
+      <Sec alt pad={24} style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 16, fontWeight: 600 }}>Partners &amp; Roles</div>
+        <div style={{ height: 12 }} />
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Btn ghost size="sm">For Students</Btn>
+          <Btn ghost size="sm">For Schools</Btn>
+          <Btn ghost size="sm">For Barbers · Soon</Btn>
+          <Btn ghost size="sm">Shop · Soon</Btn>
+        </div>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+function HomeV2Desktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={72} style={{ position: 'relative' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+          <div>
+            <Pill color={WIRE.ink2} bg={WIRE.fill}>For Texas Barber Students</Pill>
+            <div style={{ height: 18 }} />
+            <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2.1, lineHeight: 1.0 }}>300 state board questions. Free.</div>
+            <div style={{ height: 16 }} />
+            <div style={{ color: WIRE.ink2, fontSize: 18 }}>Study between clients. Flip cards, run timed quizzes, or host your cohort.</div>
+            <div style={{ height: 24 }} />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <Btn primary size="lg">Start Studying</Btn>
+              <Btn ghost size="lg">How it works</Btn>
+            </div>
+            <div style={{ height: 18 }} />
+            <div style={{ fontSize: 12, color: WIRE.ink3 }}>No signup needed · progress saves with Google</div>
+          </div>
+          <Placeholder label="Flashcard product preview · interactive flip mock" h={360} />
+        </div>
+        {annot && <Note top={80} side="right" width={180}>V2: product-forward hero. brand story demoted to row 3</Note>}
+      </Sec>
+
+      <Sec alt pad={64}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1, maxWidth: 560 }}>Three ways to study. Pick what fits the 20 minutes you have.</div>
+          <div style={{ height: 28 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {[
+              ['Flashcards', '300 cards across 17 topics. Star, filter, drill.'],
+              ['Practice Quiz', 'Timed. 20 · 50 · 100 · 150. See weak topics after.'],
+              ['Group Mode', 'Live 6-char room with your class.', 'Coming Soon'],
+            ].map(([t, s, soon]) => (
+              <Card key={t} pad={24} style={{ position: 'relative', minHeight: 180 }}>
+                {soon && <span style={{ position: 'absolute', top: 14, right: 14, fontSize: 10, textTransform: 'uppercase', color: WIRE.ink3 }}>{soon}</span>}
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: WIRE.accentSoft, marginBottom: 14 }} />
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.2 }}>{t}</div>
+                <div style={{ height: 6 }} />
+                <div style={{ fontSize: 14, color: WIRE.ink2 }}>{s}</div>
+                <div style={{ height: 14 }} />
+                <Btn ghost size="sm">Open →</Btn>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Sec>
+
+      <Sec pad={64}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
+          <Placeholder label="founder / shop photo" h={300} />
+          <div>
+            <Pill>The Brand</Pill>
+            <div style={{ height: 12 }} />
+            <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.2, lineHeight: 1.05 }}>Not a startup. A shop.</div>
+            <div style={{ height: 14 }} />
+            <Lines count={4} />
+            <div style={{ height: 20 }} />
+            <Btn ghost>About FadeJunkie →</Btn>
+          </div>
+        </div>
+      </Sec>
+
+      <Sec alt pad={48} style={{ textAlign: 'center' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ fontSize: 13, color: WIRE.ink2, textTransform: 'uppercase', letterSpacing: 1 }}>Also available</div>
+          <div style={{ height: 16 }} />
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Btn ghost>For Students</Btn>
+            <Btn ghost>For Schools</Btn>
+            <Btn ghost>For Working Barbers · Soon</Btn>
+            <Btn ghost>Shop · Soon</Btn>
+            <Btn ghost>Partners</Btn>
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── V3: Editorial / shop-bulletin — dense, typographic, streetwear energy ──
+function HomeV3({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      {/* Marquee */}
+      <div style={{ borderBottom: `1px solid ${WIRE.line}`, padding: '8px 0', overflow: 'hidden', background: WIRE.bgAlt }}>
+        <div style={{ display: 'flex', gap: 24, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.2, color: WIRE.ink2, whiteSpace: 'nowrap', padding: '0 20px' }}>
+          <span>300 Qs</span><span>TEXAS BOARD</span><span>FREE FOREVER</span><span>BY BARBERS</span><span>FOR BARBERS</span>
+        </div>
+      </div>
+
+      <Sec pad={24}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Vol. 01 · Issue 01</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 54, fontWeight: 700, letterSpacing: -2, lineHeight: 0.95 }}>BUILT<br/>IN&nbsp;THE<br/>SHOP.</div>
+        <div style={{ height: 14 }} />
+        <div style={{ borderTop: `2px solid ${WIRE.ink}`, borderBottom: `2px solid ${WIRE.ink}`, padding: '10px 0', fontSize: 12, letterSpacing: 0.3 }}>
+          Culture brand → platform. Study tool is live for TX students. Barber tools next.
+        </div>
+        <div style={{ height: 16 }} />
+        <Btn primary full size="lg">Open Education Hub →</Btn>
+        {annot && <Note top={20} side="right" width={150}>editorial / zine take — streetwear energy</Note>}
+      </Sec>
+
+      <Sec dark pad={28} style={{ color: '#fff' }}>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1.5 }}>§ 01 — The Tool</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.8, lineHeight: 1.1 }}>Pass your state board. For free.</div>
+        <div style={{ height: 16 }} />
+        <div style={{ display: 'grid', gap: 8 }}>
+          {['Flashcards', 'Practice Quiz', 'Group Mode · Soon'].map((m, i) => (
+            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace', width: 28 }}>0{i + 1}</span>
+              <span style={{ fontSize: 18, fontWeight: 600, flex: 1 }}>{m}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}>→</span>
+            </div>
+          ))}
+        </div>
+      </Sec>
+
+      <RolesLiveMobile annot={annot} />
+
+      <Sec dark pad={0} style={{ color: '#fff' }}>
+        <div style={{ padding: '32px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-evenly', textAlign: 'center', flexDirection: 'column', gap: 18, minHeight: 180 }}>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.7 }}>Schools. Distributors. Brands.</div>
+            <div style={{ height: 6 }} />
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>Let's work together.</div>
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            padding: '10px 18px', fontSize: 13, fontWeight: 600, borderRadius: 4,
+            background: 'transparent', color: '#fff',
+            border: `1px solid rgba(255,255,255,0.6)`,
+          }}>partners@fadejunkie.com</div>
+        </div>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+function HomeV3Desktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <div style={{ borderBottom: `1px solid ${WIRE.line}`, padding: '10px 0', background: WIRE.bgAlt, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: 40, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: WIRE.ink2, padding: '0 40px', justifyContent: 'center' }}>
+          <span>300 Qs</span><span>TEXAS BOARD</span><span>FREE FOREVER</span><span>BY BARBERS FOR BARBERS</span><span>EST. 2025</span>
+        </div>
+      </div>
+
+      <Sec pad={60} style={{ position: 'relative' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, alignItems: 'end' }}>
+          <div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Vol. 01 · Issue 01 · Spring '26</div>
+            <div style={{ height: 16 }} />
+            <div style={{ fontSize: 140, fontWeight: 700, letterSpacing: -5, lineHeight: 0.88 }}>BUILT BY<br/>BARBERS.</div>
+          </div>
+          <div>
+            <div style={{ borderTop: `3px solid ${WIRE.ink}`, borderBottom: `3px solid ${WIRE.ink}`, padding: '14px 0', fontSize: 15, fontWeight: 500 }}>
+              Creating a platform curated specifically for barbers. Whether learning or teaching, we've got something for you.
+            </div>
+            <div style={{ height: 16 }} />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Btn primary size="lg">Education Hub →</Btn>
+              <Btn ghost size="lg">About</Btn>
+            </div>
+          </div>
+        </div>
+        {annot && <Note top={50} side="left" width={160}>massive headline as masthead — reads like a zine cover</Note>}
+      </Sec>
+
+      <Sec dark pad={64} style={{ color: '#fff' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.2, maxWidth: 720, lineHeight: 1.05 }}>
+            Three ways to study. Pick what fits the 20 minutes you have.
+          </div>
+          <div style={{ height: 36 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {[
+              ['Flashcards', '300 cards across 17 topics. Star, filter, drill.'],
+              ['Practice Quiz', 'Timed. 20 · 50 · 100 · 150. See weak topics after.'],
+              ['Group Mode', 'Live 6-char room with your class.', 'Coming Soon'],
+            ].map(([t, s, soon]) => (
+              <div key={t} style={{
+                position: 'relative', minHeight: 200,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 10, padding: 24,
+              }}>
+                {soon && <span style={{ position: 'absolute', top: 14, right: 14, fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', letterSpacing: 0.8 }}>{soon}</span>}
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', marginBottom: 18 }} />
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3 }}>{t}</div>
+                <div style={{ height: 8 }} />
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{s}</div>
+                <div style={{ height: 16 }} />
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8,
+                  color: soon ? 'rgba(255,255,255,0.35)' : '#fff',
+                  borderBottom: soon ? 'none' : '1px solid #fff',
+                  paddingBottom: 2,
+                }}>{soon ? 'Notify me' : 'Open →'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Sec>
+
+      <RolesLiveDesktop annot={annot} />
+
+      <Sec dark pad={0} style={{ height: 180, color: '#fff' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', height: 180, display: 'flex', alignItems: 'center', justifyContent: 'space-evenly', textAlign: 'center', flexDirection: 'column' }}>
+          <div>
+            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1 }}>Schools. Distributors. Brands.</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>Let's work together.</div>
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            padding: '10px 18px', fontSize: 14, fontWeight: 600, borderRadius: 4,
+            background: 'transparent', color: '#fff',
+            border: `1px solid rgba(255,255,255,0.6)`,
+          }}>partners@fadejunkie.com</div>
+        </div>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+// ── Roles "Live List" — interactive variation (Anthony) ──
+// Mobile: row expands down. Desktop: hover/click pops up a detail card.
+// Shared data: name, status, progress%, last 3 updates.
+const ROLES_LIVE = [
+  { name: 'Student', status: 'Active Now', active: true, pct: 85,
+    updates: ['300 TX board questions live', 'Group Mode entering beta', 'Flashcards v2 shipping next week'] },
+  { name: 'School', status: 'Partnering', active: false, pct: 45,
+    updates: ['2 Austin schools in pilot', 'Cohort dashboards in design', 'Bulk license pricing drafted'] },
+  { name: 'Barber', status: 'Phase 2 · Soon', active: false, pct: 25,
+    updates: ['Client-book discovery interviews', 'Pricing card prototype', 'Waitlist opened — 412 signups'] },
+  { name: 'Shop', status: 'Phase 3 · Soon', active: false, pct: 10,
+    updates: ['Mood-boarding drops with 2 brands', 'Supply-partner convos started', 'Shop-only merch samples ordered'] },
+];
+
+function StatusBar({ pct, dark }) {
+  return (
+    <div style={{ height: 4, background: dark ? 'rgba(255,255,255,0.1)' : WIRE.fill, borderRadius: 2, overflow: 'hidden' }}>
+      <div style={{ height: '100%', width: `${pct}%`, background: dark ? '#fff' : WIRE.ink }} />
+    </div>
+  );
+}
+
+function LiveUpdates({ items, dark }) {
+  const c1 = dark ? 'rgba(255,255,255,0.9)' : WIRE.ink;
+  const c2 = dark ? 'rgba(255,255,255,0.45)' : WIRE.ink3;
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <span style={{ width: 6, height: 6, borderRadius: 999, background: WIRE.accent, boxShadow: `0 0 0 3px ${WIRE.accentSoft}` }} />
+        <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700, color: c2 }}>Live List · last 3 updates</span>
+      </div>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {items.map((u, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '18px 1fr', gap: 8, fontSize: 12, lineHeight: 1.4 }}>
+            <span style={{ color: c2, fontFamily: 'monospace' }}>0{i + 1}</span>
+            <span style={{ color: c1 }}>{u}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RolesLiveMobile({ annot }) {
+  const [open, setOpen] = React.useState(null);
+  return (
+    <Sec pad={24}>
+      <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1.5 }}>Live · Roles</div>
+      <div style={{ height: 10 }} />
+      <div style={{ display: 'grid', gap: 1, background: WIRE.line }}>
+        {ROLES_LIVE.map((r, i) => {
+          const isOpen = open === i;
+          return (
+            <div key={r.name} style={{ background: '#fff' }}>
+              <button
+                onClick={() => setOpen(isOpen ? null : i)}
+                style={{ width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '14px 14px 12px', cursor: 'pointer', display: 'grid', gap: 8 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5 }}>{r.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8, color: r.active ? WIRE.accent : WIRE.ink3 }}>{r.status}</div>
+                    <span style={{ fontSize: 11, color: WIRE.ink3 }}>{isOpen ? '−' : '+'}</span>
+                  </div>
+                </div>
+                <StatusBar pct={r.pct} />
+              </button>
+              {isOpen && (
+                <div style={{ padding: '4px 14px 16px', borderTop: `1px dashed ${WIRE.line}`, paddingTop: 12 }}>
+                  <LiveUpdates items={r.updates} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {annot && <Note top={20} side="right" width={150}>tap a role → expands with Live List (last 3 public updates)</Note>}
+    </Sec>
+  );
+}
+
+function RolesLiveDesktop({ annot }) {
+  const [hover, setHover] = React.useState(null);
+  const [pinned, setPinned] = React.useState(null);
+  const active = pinned !== null ? pinned : hover;
+  return (
+    <Sec pad={64}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, background: WIRE.line }}>
+          {ROLES_LIVE.map((r, i) => {
+            const isOn = active === i;
+            return (
+              <div
+                key={r.name}
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(null)}
+                onClick={() => setPinned(pinned === i ? null : i)}
+                style={{
+                  background: '#fff', padding: '24px 22px', cursor: 'pointer',
+                  position: 'relative',
+                  outline: isOn ? `2px solid ${WIRE.ink}` : 'none',
+                  outlineOffset: -2, zIndex: isOn ? 2 : 1,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.8 }}>{r.name}</div>
+                  <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: r.active ? WIRE.accent : WIRE.ink3 }}>{r.status}</div>
+                </div>
+                <div style={{ height: 14 }} />
+                <StatusBar pct={r.pct} />
+                <div style={{ height: 8 }} />
+                <div style={{ fontSize: 11, color: WIRE.ink3, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{r.pct}% ready</span>
+                  <span>{isOn ? (pinned === i ? 'Pinned' : 'Hovering') : 'Hover for Live List'}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Pop-up detail card */}
+        {active !== null && (
+          <div style={{
+            position: 'absolute',
+            top: active < 2 ? 'calc(100% + 12px)' : 'auto',
+            bottom: active >= 2 ? 'calc(100% + 12px)' : 'auto',
+            left: active % 2 === 0 ? 20 : 'auto',
+            right: active % 2 === 1 ? 20 : 'auto',
+            width: 380, background: WIRE.ink, color: '#fff',
+            borderRadius: 10, padding: 22, zIndex: 5,
+            boxShadow: '0 18px 40px rgba(0,0,0,0.18)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.6 }}>{ROLES_LIVE[active].name}</div>
+              <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: ROLES_LIVE[active].active ? WIRE.accent : 'rgba(255,255,255,0.5)' }}>{ROLES_LIVE[active].status}</div>
+            </div>
+            <StatusBar pct={ROLES_LIVE[active].pct} dark />
+            <div style={{ height: 16 }} />
+            <LiveUpdates items={ROLES_LIVE[active].updates} dark />
+            <div style={{ height: 14 }} />
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>click to pin · click again to close</div>
+          </div>
+        )}
+      </div>
+      {annot && <Note top={20} side="left" width={160}>hover a role → pop-up with Live List (public updates). click to pin.</Note>}
+    </Sec>
+  );
+}
+
+Object.assign(window, { HomeV1, HomeV1Desktop, HomeV2, HomeV2Desktop, HomeV3, HomeV3Desktop });
+
+
+=== lib/edu.jsx (21471 chars) ===
+// Education Hub — 3 variations (landing). Plus flashcards, quiz, group, partners, profile, barber.
+
+// ── EDU HUB V1: Mode-picker first ───────────────────────────────────────
+function EduV1({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" />
+      <Sec pad={24}>
+        <Pill>Education Hub</Pill>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1.3, lineHeight: 1.02 }}>Pick your study mode.</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>300 Texas board questions across 17 topics.</div>
+      </Sec>
+
+      <Sec pad={24}>
+        <div style={{ display: 'grid', gap: 12 }}>
+          {[
+            ['Flashcards', 'Flip at your own pace', 'Start Studying'],
+            ['Practice Quiz', 'Timed · 20/50/100/150', 'Take a Quiz'],
+            ['Group Mode', '6-char room with class', 'Create or Join', 'soon'],
+          ].map(([t, s, cta, soon]) => (
+            <Card key={t} pad={18} style={{ position: 'relative' }}>
+              {soon && <span style={{ position: 'absolute', top: 12, right: 12, fontSize: 9, textTransform: 'uppercase', color: WIRE.ink3 }}>Coming Soon</span>}
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: WIRE.accentSoft, marginBottom: 12 }} />
+              <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: -0.2 }}>{t}</div>
+              <div style={{ fontSize: 12, color: WIRE.ink2, marginTop: 4 }}>{s}</div>
+              <div style={{ height: 12 }} />
+              <Btn primary={!soon} ghost={!!soon} full>{cta} →</Btn>
+            </Card>
+          ))}
+        </div>
+        {annot && <Note top={10} side="right" width={140}>mode-picker is the page. progress below.</Note>}
+      </Sec>
+
+      {/* Progress summary */}
+      <Sec alt pad={24}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Your Progress</div>
+        <div style={{ height: 10 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[['142', 'Questions seen'], ['78%', 'Accuracy'], ['6', 'Sessions'], ['12', 'Starred']].map(([v, l]) => (
+            <Card key={l} pad={14}>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.4 }}>{v}</div>
+              <div style={{ fontSize: 11, color: WIRE.ink2, marginTop: 2 }}>{l}</div>
+            </Card>
+          ))}
+        </div>
+      </Sec>
+
+      {/* Heatmap */}
+      <Sec pad={24}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topic Mastery</div>
+        <div style={{ height: 4 }} />
+        <div style={{ fontSize: 11, color: WIRE.ink3 }}>Darker = stronger</div>
+        <div style={{ height: 14 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {['Life Skills', 'History', 'Professional', 'Sanitation', 'Microbio', 'Diseases', 'Nutrition', 'Anatomy', 'Tools', 'Equipment', 'Ergonomics', 'Orgs', 'Ethics', 'Safety', 'Study', 'Growth'].map((t, i) => {
+            const opacity = 0.1 + ((i * 37) % 90) / 100;
+            return (
+              <div key={t} style={{
+                aspectRatio: '1',
+                background: `rgba(0, 117, 222, ${opacity})`,
+                borderRadius: 4,
+                padding: 6,
+                fontSize: 9,
+                color: opacity > 0.5 ? '#fff' : WIRE.ink,
+                fontWeight: 500,
+                display: 'flex', alignItems: 'flex-end',
+              }}>{t}</div>
+            );
+          })}
+        </div>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+function EduV1Desktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" />
+      <Sec pad={60}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <Pill>Education Hub</Pill>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -1.8, lineHeight: 1 }}>Pick your study mode.</div>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 17, color: WIRE.ink2 }}>300 Texas board questions across 17 topics. Progress saves with Google sign-in.</div>
+        </div>
+      </Sec>
+
+      <Sec pad={40}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+          {[
+            ['Flashcards', 'Flip through Milady-sourced questions by topic. Star the tough ones.', 'Start Studying'],
+            ['Practice Quiz', 'Timed, scored, randomized. 20 / 50 / 100 / 150.', 'Take a Quiz'],
+            ['Group Mode', 'Host a live quiz. Share a 6-char room with your class.', 'Create or Join', true],
+          ].map(([t, s, cta, soon]) => (
+            <Card key={t} pad={28} style={{ position: 'relative', minHeight: 240 }}>
+              {soon && <span style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, textTransform: 'uppercase', color: WIRE.ink3 }}>Coming Soon</span>}
+              <div style={{ width: 48, height: 48, borderRadius: 10, background: WIRE.accentSoft, marginBottom: 18 }} />
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3 }}>{t}</div>
+              <div style={{ height: 8 }} />
+              <div style={{ fontSize: 14, color: WIRE.ink2, lineHeight: 1.55 }}>{s}</div>
+              <div style={{ height: 18 }} />
+              <Btn primary={!soon} ghost={!!soon}>{cta} →</Btn>
+            </Card>
+          ))}
+          {annot && <Note top={-20} side="right" width={150}>3 large cards = main work</Note>}
+        </div>
+      </Sec>
+
+      <Sec alt pad={56}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 40 }}>
+          <div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Your Progress</div>
+            <div style={{ height: 14 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[['142', 'Seen'], ['78%', 'Accuracy'], ['6', 'Sessions'], ['12', 'Starred']].map(([v, l]) => (
+                <Card key={l} pad={16}>
+                  <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5 }}>{v}</div>
+                  <div style={{ fontSize: 12, color: WIRE.ink2, marginTop: 2 }}>{l}</div>
+                </Card>
+              ))}
+            </div>
+            <div style={{ height: 14 }} />
+            <Card pad={14}>
+              <div style={{ fontSize: 12, color: WIRE.ink2 }}>Last session · 2d ago</div>
+              <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4 }}>38 / 50 · Sanitation + Tools</div>
+            </Card>
+          </div>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topic Mastery</div>
+              <div style={{ fontSize: 11, color: WIRE.ink3 }}>Darker = stronger. Click to drill.</div>
+            </div>
+            <div style={{ height: 14 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
+              {['Life Skills', 'History', 'Professional', 'Sanitation', 'Microbio', 'Diseases', 'Nutrition', 'Anatomy', 'Tools', 'Equipment', 'Ergonomics', 'Orgs', 'Ethics', 'Safety', 'Study', 'Growth', 'History/Fashion', 'Safety'].map((t, i) => {
+                const opacity = 0.08 + ((i * 43) % 92) / 100;
+                return (
+                  <div key={i} style={{
+                    aspectRatio: '1',
+                    background: `rgba(0, 117, 222, ${opacity})`,
+                    borderRadius: 4,
+                    padding: 8,
+                    fontSize: 10,
+                    color: opacity > 0.5 ? '#fff' : WIRE.ink,
+                    fontWeight: 500,
+                    display: 'flex', alignItems: 'flex-end',
+                  }}>{t}</div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── EDU HUB V2: Dashboard-first ─────────────────────────────────────────
+function EduV2({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" />
+      <Sec pad={20}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 12, color: WIRE.ink2 }}>Welcome back,</div>
+            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.4 }}>Marcus</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.6, color: WIRE.accent }}>78%</div>
+            <div style={{ fontSize: 10, color: WIRE.ink2 }}>overall accuracy</div>
+          </div>
+        </div>
+      </Sec>
+
+      <Sec alt pad={18}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Pick up where you left off</div>
+        <div style={{ height: 10 }} />
+        <Card pad={16}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 8, background: WIRE.accentSoft }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>Sanitation · 12/50</div>
+              <div style={{ height: 4 }} />
+              <div style={{ height: 4, background: WIRE.line, borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '24%', background: WIRE.accent }} />
+              </div>
+            </div>
+            <Btn primary size="sm">Resume</Btn>
+          </div>
+        </Card>
+      </Sec>
+
+      <Sec pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Study modes</div>
+        <div style={{ height: 10 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {[['Flashcards', '300'], ['Quiz', 'Timed'], ['Group', 'Soon'], ['Starred', '12']].map(([t, s]) => (
+            <Card key={t} pad={14}>
+              <div style={{ width: 26, height: 26, borderRadius: 6, background: WIRE.fill, marginBottom: 8 }} />
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{t}</div>
+              <div style={{ fontSize: 10, color: WIRE.ink3 }}>{s}</div>
+            </Card>
+          ))}
+        </div>
+        {annot && <Note top={8} side="right" width={140}>dashboard-first: stats + resume hero, modes are a 2×2 grid below</Note>}
+      </Sec>
+
+      <Sec alt pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Weak topics</div>
+        <div style={{ height: 10 }} />
+        {['Microbiology — 42%', 'Diseases — 55%', 'Ergonomics — 61%'].map(t => (
+          <div key={t} style={{ padding: '10px 0', borderTop: `1px solid ${WIRE.line}`, fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
+            <span>{t}</span><span style={{ color: WIRE.accent, fontWeight: 600 }}>Drill →</span>
+          </div>
+        ))}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function EduV2Desktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" />
+      <Sec pad={40}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 32, alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 13, color: WIRE.ink2 }}>Welcome back,</div>
+            <div style={{ fontSize: 44, fontWeight: 700, letterSpacing: -1.4 }}>Marcus</div>
+            <div style={{ height: 14 }} />
+            <Card pad={18} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 10, background: WIRE.accentSoft }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>Sanitation · 12/50 · started 2d ago</div>
+                <div style={{ height: 6 }} />
+                <div style={{ height: 5, background: WIRE.line, borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '24%', background: WIRE.accent }} />
+                </div>
+              </div>
+              <Btn primary>Resume quiz</Btn>
+            </Card>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {[['78%', 'Accuracy'], ['142', 'Seen'], ['6', 'Sessions'], ['12', 'Starred']].map(([v, l]) => (
+              <Card key={l} pad={14}>
+                <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.4 }}>{v}</div>
+                <div style={{ fontSize: 11, color: WIRE.ink2 }}>{l}</div>
+              </Card>
+            ))}
+          </div>
+        </div>
+        {annot && <Note top={60} side="left" width={170}>V2: dashboard-first. returning users see progress + resume at the top, not a mode picker</Note>}
+      </Sec>
+
+      <Sec alt pad={40}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Study modes</div>
+          <div style={{ height: 14 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+            {[['Flashcards', '300 cards'], ['Practice Quiz', 'Timed'], ['Group Mode', 'Soon'], ['Starred Only', '12 cards']].map(([t, s]) => (
+              <Card key={t} pad={20}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: WIRE.fill, marginBottom: 12 }} />
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{t}</div>
+                <div style={{ fontSize: 12, color: WIRE.ink2, marginTop: 2 }}>{s}</div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Sec>
+
+      <Sec pad={40}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: 32 }}>
+          <div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Weak topics</div>
+            <div style={{ height: 10 }} />
+            {['Microbiology — 42%', 'Diseases — 55%', 'Ergonomics — 61%', 'History/Fashion — 64%'].map(t => (
+              <div key={t} style={{ padding: '14px 0', borderTop: `1px solid ${WIRE.line}`, fontSize: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{t}</span><Btn ghost size="sm">Drill →</Btn>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>All 17 topics</div>
+            <div style={{ height: 10 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 5 }}>
+              {Array.from({length: 18}).map((_, i) => {
+                const o = 0.08 + ((i * 31) % 92) / 100;
+                return <div key={i} style={{ aspectRatio: '1', background: `rgba(0,117,222,${o})`, borderRadius: 3 }} />;
+              })}
+            </div>
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── EDU HUB V3: Split — browse anonymous, save prompt ────────────────────
+function EduV3({ annot }) {
+  return (
+    <Page>
+      <NavBar title="Education Hub" />
+      {/* Anonymous banner */}
+      <div style={{ background: WIRE.accentSoft, padding: '10px 20px', fontSize: 12, color: WIRE.accent, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Studying as guest · progress won't save</span>
+        <span style={{ fontWeight: 600 }}>Sign in →</span>
+      </div>
+      <Sec pad={24}>
+        <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1.2, lineHeight: 1.02 }}>Jump in.</div>
+        <div style={{ height: 8 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>No signup needed. Sign in anytime to save progress.</div>
+      </Sec>
+
+      <Sec dark pad={20} style={{ color: '#fff' }}>
+        {/* Topic-first entry — browse by topic, pick mode per topic */}
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 }}>Browse by topic · 17 total</div>
+        <div style={{ height: 10 }} />
+        {[
+          ['Sanitation', 42, 8],
+          ['Tools & Equipment', 38, 0],
+          ['Anatomy', 35, 3],
+          ['Microbiology', 28, 0],
+          ['Diseases', 24, 1],
+          ['Life Skills', 22, 0],
+        ].map(([t, n, star]) => (
+          <div key={t} style={{ padding: '14px 0', borderTop: `1px solid rgba(255,255,255,0.15)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{t}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>{n} cards {star > 0 && `· ${star} starred ★`}</div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                padding: '5px 10px', fontSize: 11, fontWeight: 600, borderRadius: 4,
+                background: 'transparent', color: '#fff',
+                border: `1px solid rgba(255,255,255,0.4)`,
+              }}>Flip</div>
+              <Btn primary size="sm">Quiz</Btn>
+            </div>
+          </div>
+        ))}
+        {annot && <Note top={0} side="right" width={140}>topic-first: browse + pick mode per topic. good for returning students who know their gaps</Note>}
+      </Sec>
+
+      <Sec alt pad={22} style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>Want a full practice run?</div>
+        <div style={{ height: 10 }} />
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+          <Btn ghost size="sm">20</Btn><Btn ghost size="sm">50</Btn><Btn primary size="sm">100</Btn><Btn ghost size="sm">150</Btn>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function EduV3Desktop({ annot }) {
+  return (
+    <Page>
+      <NavBar title="Education Hub" />
+      <div style={{ background: WIRE.accentSoft, padding: '12px 40px', fontSize: 13, color: WIRE.accent, textAlign: 'center' }}>
+        Studying as guest · progress won't save. <span style={{ fontWeight: 600, textDecoration: 'underline' }}>Sign in with Google →</span>
+      </div>
+      <Sec pad={52}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
+          <div>
+            <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -1.8, lineHeight: 1 }}>Jump in.</div>
+            <div style={{ height: 10 }} />
+            <div style={{ fontSize: 16, color: WIRE.ink2 }}>No signup needed. Sign in anytime to save progress.</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Btn ghost>All Flashcards</Btn>
+            <Btn primary>Full Practice Quiz</Btn>
+          </div>
+        </div>
+      </Sec>
+
+      <Sec dark pad={40} style={{ color: '#fff' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 }}>Browse by topic · 17 topics · 300 cards</div>
+          <div style={{ height: 14 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, background: 'rgba(255,255,255,0.15)', border: `1px solid rgba(255,255,255,0.15)` }}>
+            {[
+              ['Sanitation', 42, 8], ['Tools & Equipment', 38, 0],
+              ['Anatomy', 35, 3], ['Microbiology', 28, 0],
+              ['Diseases', 24, 1], ['Life Skills', 22, 0],
+              ['History', 18, 0], ['Ergonomics', 16, 2],
+              ['Safety', 20, 0], ['Organizations', 14, 0],
+            ].map(([t, n, star]) => (
+              <div key={t} style={{ background: WIRE.ink, padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 600 }}>{t}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{n} cards {star > 0 && `· ${star} ★`}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '5px 10px', fontSize: 11, fontWeight: 600, borderRadius: 4,
+                    background: 'transparent', color: '#fff',
+                    border: `1px solid rgba(255,255,255,0.4)`,
+                  }}>Flip</div>
+                  <Btn primary size="sm">Quiz</Btn>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {annot && <Note top={20} side="right" width={160}>two-col topic table; each row = own entry point. for study-between-clients muscle memory</Note>}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+Object.assign(window, { EduV1, EduV1Desktop, EduV2, EduV2Desktop, EduV3, EduV3Desktop });
+
+
+=== lib/screens.jsx (48665 chars) ===
+// Flashcards, Quiz, Group, Partners, Profile, Barber — one wireframe each (mobile + desktop).
+
+// ── Mode Toggle (Flashcards ⟷ Practice Quiz) ──────────────────────────
+// Shared toggle so users can flip between study modes without losing their
+// topic/context. Surfaced in the top bar of Flash and Quiz screens.
+// NOTE: This is a design indicator only — the wireframe doesn't route
+// between pages. Intent is that selecting the other mode carries the
+// current topic filter + progress across.
+function ModeToggle({ mode, size = 'md' }) {
+  const isLg = size === 'lg';
+  const pad = isLg ? '6px 14px' : '4px 10px';
+  const fs = isLg ? 12 : 11;
+  const pill = (label, active) => (
+    <div style={{
+      padding: pad, fontSize: fs, fontWeight: 600, borderRadius: 4,
+      background: active ? WIRE.ink : 'transparent',
+      color: active ? '#fff' : WIRE.ink2,
+      letterSpacing: 0.2,
+    }}>{label}</div>
+  );
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: 2, padding: 2,
+      background: WIRE.fill, borderRadius: 6, border: `1px solid ${WIRE.line}`,
+    }}>
+      {pill('Flashcards', mode === 'flash')}
+      {pill('Quiz', mode === 'quiz')}
+    </div>
+  );
+}
+
+// ── FLASHCARDS ──────────────────────────────────────────────────────────
+function Flash({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      {/* top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: `1px solid ${WIRE.line}` }}>
+        <div style={{ fontSize: 18 }}>←</div>
+        <ModeToggle mode="flash" />
+        <div style={{ flex: 1 }} />
+        <Btn ghost size="sm">Topics ▾</Btn>
+        <span style={{ fontSize: 11, color: WIRE.ink2 }}>★</span>
+        <div style={{ width: 28, height: 16, background: WIRE.fill, borderRadius: 999, position: 'relative' }}>
+          <div style={{ position: 'absolute', top: 2, left: 2, width: 12, height: 12, background: '#fff', borderRadius: 999, border: `1px solid ${WIRE.line}` }} />
+        </div>
+      </div>
+      {/* progress */}
+      <div style={{ height: 3, background: WIRE.line }}>
+        <div style={{ height: '100%', width: '4%', background: WIRE.accent }} />
+      </div>
+
+      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, minHeight: 480 }}>
+        {/* card */}
+        <div style={{ width: '100%', aspectRatio: '5/7', background: '#fff', border: `1px solid ${WIRE.line}`, borderRadius: 12, boxShadow: '0 4px 18px rgba(0,0,0,0.05)', padding: 24, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <Pill color={WIRE.ink2} bg={WIRE.fill}>Sanitation</Pill>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3, lineHeight: 1.3 }}>
+              Which disinfectant level is required for implements that have come in contact with blood?
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: WIRE.ink3, textAlign: 'center' }}>Tap to flip</div>
+        </div>
+        {annot && <Note top={90} side="right" width={140}>tap anywhere on card to flip. question front / answer back</Note>}
+
+        {/* controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, width: '100%', justifyContent: 'center' }}>
+          <div style={{ width: 38, height: 38, borderRadius: 999, border: `1px solid ${WIRE.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>☆</div>
+          <div style={{ width: 38, height: 38, borderRadius: 999, border: `1px solid ${WIRE.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>←</div>
+          <div style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>12 / 300</div>
+          <div style={{ width: 38, height: 38, borderRadius: 999, background: WIRE.accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>→</div>
+        </div>
+      </div>
+    </Page>
+  );
+}
+
+function FlashDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 40px', borderBottom: `1px solid ${WIRE.line}` }}>
+        <Btn ghost size="sm">← Hub</Btn>
+        <div style={{ width: 1, height: 20, background: WIRE.line }} />
+        <ModeToggle mode="flash" size="lg" />
+        {annot && <Note top={-32} side="right" width={180}>mode toggle: swap between Flashcards and Quiz for the same topic without losing progress</Note>}
+        <div style={{ width: 1, height: 20, background: WIRE.line }} />
+        <Btn ghost size="sm">All Topics ▾</Btn>
+        <div style={{ flex: 1 }} />
+        <span style={{ fontSize: 12, color: WIRE.ink2 }}>Starred only</span>
+        <div style={{ width: 32, height: 18, background: WIRE.fill, borderRadius: 999 }} />
+      </div>
+      <div style={{ height: 3, background: WIRE.line }}>
+        <div style={{ height: '100%', width: '4%', background: WIRE.accent }} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: 560 }}>
+        {/* Topics sidebar */}
+        <div style={{ borderRight: `1px solid ${WIRE.line}`, padding: '20px 14px' }}>
+          <div style={{ fontSize: 10, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topics</div>
+          <div style={{ height: 10 }} />
+          {['All · 300', 'Life Skills', 'History', 'Professionalism', 'Sanitation', 'Microbiology', 'Diseases', 'Nutrition', 'Anatomy', 'Tools', 'Equipment', 'Ergonomics', 'Ethics', 'Safety'].map((t, i) => (
+            <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, padding: '5px 0', color: WIRE.ink2, cursor: 'pointer' }}>
+              <div style={{ width: 13, height: 13, border: `1px solid ${WIRE.lineHard}`, borderRadius: 3, background: i === 4 ? WIRE.accent : '#fff' }} />
+              {t}
+            </label>
+          ))}
+        </div>
+        {/* card center stage */}
+        <div style={{ padding: '40px 60px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, position: 'relative' }}>
+          <div style={{ width: 440, height: 320, background: '#fff', border: `1px solid ${WIRE.line}`, borderRadius: 16, boxShadow: '0 14px 28px rgba(0,0,0,0.04),0 23px 52px rgba(0,0,0,0.05)', padding: 40, display: 'flex', flexDirection: 'column' }}>
+            <Pill color={WIRE.ink2} bg={WIRE.fill}>Sanitation</Pill>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.3, lineHeight: 1.3 }}>Which disinfectant level is required for implements that have come in contact with blood?</div>
+            </div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, textAlign: 'center' }}>Tap or press space to flip</div>
+          </div>
+          {annot && <Note top={60} side="right" width={160}>center-stage card. sidebar filters on desktop, drawer on mobile</Note>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 999, border: `1px solid ${WIRE.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>☆</div>
+            <div style={{ width: 42, height: 42, borderRadius: 999, border: `1px solid ${WIRE.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</div>
+            <div style={{ fontSize: 14, fontWeight: 600, fontVariantNumeric: 'tabular-nums', minWidth: 70, textAlign: 'center' }}>12 / 300</div>
+            <div style={{ width: 42, height: 42, borderRadius: 999, background: WIRE.accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>→</div>
+          </div>
+        </div>
+      </div>
+    </Page>
+  );
+}
+
+// ── QUIZ (pre + active + results) ───────────────────────────────────────
+function QuizSetup({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={24}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Btn ghost size="sm">← Hub</Btn>
+          <div style={{ flex: 1 }} />
+          <ModeToggle mode="quiz" />
+        </div>
+        <div style={{ height: 12 }} />
+        <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1.2 }}>Practice Quiz</div>
+        <div style={{ height: 8 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Timed and scored. Simulate test day.</div>
+
+        <div style={{ height: 24 }} />
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Question count</div>
+        <div style={{ height: 10 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          {['20', '50', '100', '150'].map((n, i) => (
+            <div key={n} style={{
+              padding: '14px 0', textAlign: 'center', fontWeight: 700, fontSize: 16,
+              border: i === 1 ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+              background: i === 1 ? WIRE.accentSoft : '#fff',
+              color: i === 1 ? WIRE.accent : WIRE.ink,
+              borderRadius: 8,
+            }}>{n}</div>
+          ))}
+        </div>
+
+        <div style={{ height: 20 }} />
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topics</div>
+        <div style={{ height: 10 }} />
+        <Card pad={12} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 13 }}>All 17 topics</span>
+          <span style={{ fontSize: 12, color: WIRE.accent, fontWeight: 600 }}>Choose ▾</span>
+        </Card>
+
+        <div style={{ height: 28 }} />
+        <Btn primary full size="lg">Start Quiz</Btn>
+        {annot && <Note top={60} side="right" width={140}>pill picker for count. topic chooser is a drawer</Note>}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function QuizActive({ annot }) {
+  return (
+    <Page>
+      {/* Minimal top bar */}
+      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${WIRE.line}` }}>
+        <div style={{ fontSize: 12, color: WIRE.ink2 }}>Exit quiz</div>
+        <div style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: WIRE.accent }}>18:42</div>
+      </div>
+      <div style={{ height: 3, background: WIRE.line }}>
+        <div style={{ height: '100%', width: '28%', background: WIRE.accent }} />
+      </div>
+      <div style={{ padding: '20px 16px' }}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Question 14 of 50 · Sanitation</div>
+        <div style={{ height: 12 }} />
+        <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: -0.2, lineHeight: 1.35 }}>
+          Which of the following is the most effective method for sanitizing metal implements between clients?
+        </div>
+        <div style={{ height: 20 }} />
+        <div style={{ display: 'grid', gap: 8 }}>
+          {[
+            ['A', 'Wiping with isopropyl alcohol', 'neutral'],
+            ['B', 'EPA-registered hospital disinfectant, 10 min', 'selected'],
+            ['C', 'Soap and warm water', 'neutral'],
+            ['D', 'UV light only', 'neutral'],
+          ].map(([letter, text, state]) => (
+            <div key={letter} style={{
+              padding: 14,
+              border: state === 'selected' ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+              background: state === 'selected' ? WIRE.accentSoft : '#fff',
+              borderRadius: 8,
+              display: 'flex', gap: 12, alignItems: 'center',
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 999,
+                background: state === 'selected' ? WIRE.accent : WIRE.fill,
+                color: state === 'selected' ? '#fff' : WIRE.ink2,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700,
+              }}>{letter}</div>
+              <div style={{ fontSize: 14, flex: 1 }}>{text}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ height: 16 }} />
+        <Btn primary full size="lg">Next →</Btn>
+        {annot && <Note top={140} side="right" width={140}>neutral · selected · correct · incorrect states</Note>}
+      </div>
+    </Page>
+  );
+}
+
+function QuizResults({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={28} style={{ textAlign: 'center' }}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>Quiz Complete</Pill>
+        <div style={{ height: 14 }} />
+        <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -2, lineHeight: 1 }}>38<span style={{ color: WIRE.ink3 }}>/50</span></div>
+        <div style={{ height: 6 }} />
+        <div style={{ fontSize: 22, fontWeight: 700, color: WIRE.accent }}>76%</div>
+      </Sec>
+      <Sec alt pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>By topic</div>
+        <div style={{ height: 12 }} />
+        {[['Sanitation', 90], ['Anatomy', 80], ['Tools', 75], ['Microbiology', 42], ['History', 88]].map(([t, pct]) => (
+          <div key={t} style={{ padding: '10px 0', borderTop: `1px solid ${WIRE.line}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ fontWeight: 500 }}>{t}</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', color: pct < 60 ? '#c4492a' : WIRE.ink2 }}>{pct}%</span>
+            </div>
+            <div style={{ height: 6 }} />
+            <div style={{ height: 5, background: WIRE.line, borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: pct < 60 ? '#c4492a' : WIRE.accent }} />
+            </div>
+          </div>
+        ))}
+      </Sec>
+      <Sec pad={20}>
+        <Card pad={14} style={{ background: '#fdf4f0', border: '1px solid rgba(196,73,42,0.2)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#c4492a', textTransform: 'uppercase', letterSpacing: 1 }}>Weak spot</div>
+          <div style={{ height: 4 }} />
+          <div style={{ fontSize: 14, fontWeight: 600 }}>Microbiology — 42%</div>
+          <div style={{ fontSize: 12, color: WIRE.ink2 }}>Drill this next.</div>
+        </Card>
+        <div style={{ height: 12 }} />
+        <div style={{ display: 'grid', gap: 8 }}>
+          <Btn primary full size="lg">Review 12 Missed</Btn>
+          <Btn ghost full>Take Another Quiz</Btn>
+        </div>
+        {annot && <Note top={0} side="right" width={140}>weak topic gets a callout, not buried in a chart</Note>}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function QuizSetupDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={60}>
+        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Btn ghost size="sm">← Hub</Btn>
+            <div style={{ width: 1, height: 20, background: WIRE.line }} />
+            <ModeToggle mode="quiz" size="lg" />
+            {annot && <Note top={-32} side="right" width={180}>mode toggle mirrors Flashcards — same topic, different drill style</Note>}
+          </div>
+          <div style={{ height: 20 }} />
+          <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -1.8 }}>Practice Quiz</div>
+          <div style={{ height: 12 }} />
+          <div style={{ fontSize: 17, color: WIRE.ink2 }}>Timed and scored. Simulate test day.</div>
+          <div style={{ height: 36 }} />
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Question count</div>
+          <div style={{ height: 12 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            {['20', '50', '100', '150'].map((n, i) => (
+              <div key={n} style={{
+                padding: '20px 0', textAlign: 'center', fontWeight: 700, fontSize: 22,
+                border: i === 1 ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+                background: i === 1 ? WIRE.accentSoft : '#fff',
+                color: i === 1 ? WIRE.accent : WIRE.ink,
+                borderRadius: 12,
+              }}>{n}</div>
+            ))}
+          </div>
+          <div style={{ height: 24 }} />
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topics</div>
+          <div style={{ height: 12 }} />
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['All', 'Sanitation', 'Anatomy', 'Tools', 'Microbiology', '+ 13 more'].map((t, i) => (
+              <Btn key={t} primary={i === 0} ghost={i !== 0} size="sm">{t}</Btn>
+            ))}
+          </div>
+          <div style={{ height: 32 }} />
+          <Btn primary size="lg">Start 50-question Quiz</Btn>
+          {annot && <Note top={120} side="right" width={150}>pills for count, chips for topics</Note>}
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function QuizActiveDesktop({ annot }) {
+  return (
+    <Page>
+      <div style={{ padding: '16px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${WIRE.line}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Btn ghost size="sm">Exit</Btn>
+          <span style={{ fontSize: 12, color: WIRE.ink2 }}>Question 14 of 50</span>
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: WIRE.accent }}>18:42</div>
+      </div>
+      <div style={{ height: 3, background: WIRE.line }}><div style={{ height: '100%', width: '28%', background: WIRE.accent }} /></div>
+
+      <Sec pad={60}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <Pill color={WIRE.ink2} bg={WIRE.fill}>Sanitation</Pill>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: -0.4, lineHeight: 1.3 }}>
+            Which of the following is the most effective method for sanitizing metal implements between clients?
+          </div>
+          <div style={{ height: 28 }} />
+          <div style={{ display: 'grid', gap: 10 }}>
+            {[['A', 'Wiping with isopropyl alcohol', 'n'], ['B', 'EPA-registered hospital disinfectant, 10 min', 's'], ['C', 'Soap and warm water', 'n'], ['D', 'UV light only', 'n']].map(([l, t, st]) => (
+              <div key={l} style={{
+                padding: '16px 20px',
+                border: st === 's' ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+                background: st === 's' ? WIRE.accentSoft : '#fff',
+                borderRadius: 10, display: 'flex', gap: 14, alignItems: 'center',
+              }}>
+                <div style={{ width: 32, height: 32, borderRadius: 999, background: st === 's' ? WIRE.accent : WIRE.fill, color: st === 's' ? '#fff' : WIRE.ink2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{l}</div>
+                <div style={{ fontSize: 16 }}>{t}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ height: 24 }} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Btn primary size="lg">Next →</Btn>
+          </div>
+        </div>
+      </Sec>
+    </Page>
+  );
+}
+
+function QuizResultsDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={60} style={{ textAlign: 'center' }}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>Quiz Complete</Pill>
+        <div style={{ height: 18 }} />
+        <div style={{ fontSize: 120, fontWeight: 700, letterSpacing: -4, lineHeight: 1 }}>38<span style={{ color: WIRE.ink3 }}>/50</span></div>
+        <div style={{ fontSize: 32, fontWeight: 700, color: WIRE.accent }}>76%</div>
+      </Sec>
+      <Sec alt pad={60}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 40 }}>
+          <div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>By topic</div>
+            <div style={{ height: 14 }} />
+            {[['Sanitation', 90], ['Anatomy', 80], ['Tools', 75], ['History', 88], ['Microbiology', 42], ['Diseases', 58]].map(([t, pct]) => (
+              <div key={t} style={{ padding: '12px 0', borderTop: `1px solid ${WIRE.line}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                  <span style={{ fontWeight: 500 }}>{t}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', color: pct < 60 ? '#c4492a' : WIRE.ink2 }}>{pct}%</span>
+                </div>
+                <div style={{ height: 6 }} />
+                <div style={{ height: 6, background: WIRE.line, borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: pct < 60 ? '#c4492a' : WIRE.accent }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
+            <Card pad={18} style={{ background: '#fdf4f0', border: '1px solid rgba(196,73,42,0.2)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#c4492a', textTransform: 'uppercase', letterSpacing: 1 }}>Weak spot</div>
+              <div style={{ height: 6 }} />
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3 }}>Microbiology</div>
+              <div style={{ fontSize: 13, color: WIRE.ink2 }}>42% · 8 questions missed</div>
+              <div style={{ height: 12 }} />
+              <Btn primary size="sm">Drill these 8</Btn>
+            </Card>
+            <div style={{ height: 14 }} />
+            <div style={{ display: 'grid', gap: 8 }}>
+              <Btn primary>Review 12 Missed</Btn>
+              <Btn ghost>Take Another Quiz</Btn>
+              <Btn ghost>Back to Hub</Btn>
+            </div>
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── GROUP MODE (4 screens) ──────────────────────────────────────────────
+function GroupHost({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={24}>
+        <Btn ghost size="sm">← Hub</Btn>
+        <div style={{ height: 14 }} />
+        <Pill>Group Mode · Host</Pill>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.4 }}>Your room is live</div>
+        <div style={{ height: 20 }} />
+        <Card pad={28} style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Room code</div>
+          <div style={{ height: 10 }} />
+          <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: 6, fontFamily: 'monospace' }}>FADE7K</div>
+          <div style={{ height: 14 }} />
+          <div style={{ width: 120, height: 120, margin: '0 auto', background: `repeating-conic-gradient(${WIRE.ink} 0% 25%, #fff 25% 50%) 50%/16px 16px` }} />
+          <div style={{ height: 10 }} />
+          <div style={{ fontSize: 11, color: WIRE.ink3 }}>fadejunkie.com/r/FADE7K</div>
+        </Card>
+        <div style={{ height: 20 }} />
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Players · 4 joined</div>
+        <div style={{ height: 10 }} />
+        {['Marcus', 'Rae', 'Jalen', 'Dee'].map(n => (
+          <div key={n} style={{ padding: '10px 0', borderTop: `1px solid ${WIRE.line}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 999, background: WIRE.fill }} />
+            <span style={{ fontSize: 14 }}>{n}</span>
+            <span style={{ marginLeft: 'auto', fontSize: 10, color: WIRE.ink3 }}>✓ ready</span>
+          </div>
+        ))}
+        <div style={{ height: 20 }} />
+        <Btn primary full size="lg">Start Game (4 players)</Btn>
+        {annot && <Note top={120} side="right" width={140}>big code + QR for phone-scan. lobby below</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+function GroupPlayer({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={32} style={{ textAlign: 'center' }}>
+        <Pill>Group Mode</Pill>
+        <div style={{ height: 14 }} />
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.8 }}>Join a room</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Your instructor will share a 6-character code.</div>
+        <div style={{ height: 28 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6, maxWidth: 280, margin: '0 auto' }}>
+          {['F', 'A', 'D', 'E', '_', '_'].map((c, i) => (
+            <div key={i} style={{
+              aspectRatio: '1', border: `1.5px solid ${c === '_' ? WIRE.line : WIRE.accent}`,
+              borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 26, fontWeight: 700, fontFamily: 'monospace',
+              color: c === '_' ? WIRE.ink3 : WIRE.ink, background: c === '_' ? '#fff' : WIRE.accentSoft,
+            }}>{c === '_' ? '' : c}</div>
+          ))}
+        </div>
+        <div style={{ height: 22 }} />
+        <Btn primary size="lg">Join Room</Btn>
+        {annot && <Note top={120} side="right" width={140}>big single-digit boxes = easier on mobile than one input</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+function GroupLive({ annot }) {
+  return (
+    <Page>
+      <div style={{ padding: '10px 14px', borderBottom: `1px solid ${WIRE.line}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 11, fontFamily: 'monospace', color: WIRE.ink2 }}>FADE7K</span>
+        <span style={{ fontSize: 11, color: WIRE.ink2 }}>Q 3/10 · 4 players</span>
+      </div>
+      <Sec pad={22}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 999, border: `3px solid ${WIRE.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: WIRE.accent, fontVariantNumeric: 'tabular-nums' }}>08</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Seconds left</div>
+            <div style={{ fontSize: 12, color: WIRE.ink2 }}>3 of 4 answered</div>
+          </div>
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 600, lineHeight: 1.35, letterSpacing: -0.2 }}>
+          Which autoclave cycle is standard for barber implements?
+        </div>
+        <div style={{ height: 18 }} />
+        <div style={{ display: 'grid', gap: 8 }}>
+          {[['A', '121°C, 15 min'], ['B', '134°C, 3 min'], ['C', '100°C, 30 min'], ['D', '150°C, 5 min']].map(([l, t], i) => (
+            <div key={l} style={{
+              padding: 14, border: `1px solid ${WIRE.line}`, borderRadius: 8,
+              background: i === 0 ? WIRE.accentSoft : '#fff',
+              display: 'flex', gap: 12, alignItems: 'center',
+            }}>
+              <div style={{ width: 26, height: 26, borderRadius: 999, background: WIRE.fill, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{l}</div>
+              <div style={{ fontSize: 14 }}>{t}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ height: 18 }} />
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Live scores</div>
+        <div style={{ height: 8 }} />
+        {[['Rae', 280], ['Marcus', 240], ['Dee', 180], ['Jalen', 120]].map(([n, s], i) => (
+          <div key={n} style={{ padding: '8px 0', display: 'flex', alignItems: 'center', gap: 10, borderTop: `1px solid ${WIRE.line}` }}>
+            <span style={{ width: 14, fontSize: 11, color: WIRE.ink3 }}>{i + 1}</span>
+            <span style={{ fontSize: 13, flex: 1 }}>{n}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{s}</span>
+          </div>
+        ))}
+        {annot && <Note top={20} side="right" width={140}>synced view — host + players see same screen, ring timer above</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+function GroupEnd({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={28} style={{ textAlign: 'center' }}>
+        <Pill>Game Complete</Pill>
+        <div style={{ height: 12 }} />
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.8 }}>Final standings</div>
+      </Sec>
+      <Sec pad={20}>
+        {/* Podium */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: 6, alignItems: 'end', marginBottom: 20 }}>
+          {[[2, 'Marcus', 240, 70], [1, 'Rae', 280, 100], [3, 'Dee', 180, 50]].map(([p, n, s, h]) => (
+            <div key={n} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: WIRE.ink3 }}>{n}</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{s}</div>
+              <div style={{ height: 6 }} />
+              <div style={{ height: h, background: p === 1 ? WIRE.accent : WIRE.fill2, borderRadius: '4px 4px 0 0', display: 'flex', alignItems: 'start', justifyContent: 'center', paddingTop: 8, color: p === 1 ? '#fff' : WIRE.ink, fontWeight: 700 }}>#{p}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Full results</div>
+        <div style={{ height: 8 }} />
+        {[[1, 'Rae', 280, '9/10'], [2, 'Marcus', 240, '8/10'], [3, 'Dee', 180, '6/10'], [4, 'Jalen', 120, '4/10']].map(([p, n, s, c]) => (
+          <div key={n} style={{ padding: '10px 0', borderTop: `1px solid ${WIRE.line}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 16, fontSize: 11, color: WIRE.ink3 }}>#{p}</span>
+            <span style={{ fontSize: 14, flex: 1 }}>{n}</span>
+            <span style={{ fontSize: 12, color: WIRE.ink2 }}>{c}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums', width: 44, textAlign: 'right' }}>{s}</span>
+          </div>
+        ))}
+        <div style={{ height: 20 }} />
+        <div style={{ display: 'grid', gap: 8 }}>
+          <Btn primary full>Play Again</Btn>
+          <Btn ghost full>Back to Hub</Btn>
+        </div>
+        {annot && <Note top={0} side="right" width={140}>podium for 1-3, table for all</Note>}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── PARTNERS ─────────────────────────────────────────────────────────────
+function Partners({ annot }) {
+  const TYPES = [
+    ['Barber Schools', 'Actively Seeking', 'Free for cohorts. Your logo in the hub.'],
+    ['Tool & Product Brands', 'Open', 'Featured in tool-relevant content.'],
+    ['Distributors', 'Planning', 'Regional rollout with your reps.'],
+    ['Platform Partners', 'Phase 4', 'API + data sharing with industry SaaS.'],
+  ];
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={28}>
+        <Pill>Partners</Pill>
+        <div style={{ height: 12 }} />
+        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1.3, lineHeight: 1.05 }}>Peer-to-peer partnerships.</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 14, color: WIRE.ink2 }}>We partner with the people who make the industry run. Not a media kit. A conversation.</div>
+      </Sec>
+      <Sec alt pad={20}>
+        <div style={{ display: 'grid', gap: 12 }}>
+          {TYPES.map(([t, s, desc]) => (
+            <Card key={t} pad={18}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: -0.2 }}>{t}</div>
+                <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, color: s === 'Actively Seeking' ? WIRE.accent : WIRE.ink3, padding: '3px 8px', background: s === 'Actively Seeking' ? WIRE.accentSoft : WIRE.fill, borderRadius: 999, fontWeight: 600 }}>{s}</span>
+              </div>
+              <div style={{ height: 10 }} />
+              <div style={{ fontSize: 13, color: WIRE.ink2 }}>{desc}</div>
+              <div style={{ height: 12 }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 12 }}>
+                <div>
+                  <div style={{ color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 10, fontWeight: 600 }}>We offer</div>
+                  <div style={{ height: 4 }} />
+                  <Lines count={2} />
+                </div>
+                <div>
+                  <div style={{ color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 10, fontWeight: 600 }}>We ask</div>
+                  <div style={{ height: 4 }} />
+                  <Lines count={2} />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+        {annot && <Note top={20} side="right" width={130}>symmetric "offer/ask" to kill media-kit feel</Note>}
+      </Sec>
+      <Sec pad={26} style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.5 }}>Interested?</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>partners@fadejunkie.com</div>
+        <div style={{ height: 14 }} />
+        <Btn primary>Get in touch</Btn>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function PartnersDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={60}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <Pill>Partners</Pill>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2, lineHeight: 1 }}>Peer-to-peer partnerships.</div>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 18, color: WIRE.ink2, maxWidth: 640 }}>We partner with the people who make the industry run. Not a media kit. A conversation.</div>
+        </div>
+      </Sec>
+      <Sec alt pad={60}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          {[
+            ['Barber Schools', 'Actively Seeking', 'Free for cohorts. Your logo in the hub.'],
+            ['Tool & Product Brands', 'Open', 'Featured in tool-relevant content.'],
+            ['Distributors', 'Planning', 'Regional rollout with your reps.'],
+            ['Platform Partners', 'Phase 4', 'API + data sharing with industry SaaS.'],
+          ].map(([t, s, desc]) => (
+            <Card key={t} pad={26}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3 }}>{t}</div>
+                <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8, color: s === 'Actively Seeking' ? WIRE.accent : WIRE.ink3, padding: '4px 10px', background: s === 'Actively Seeking' ? WIRE.accentSoft : WIRE.fill, borderRadius: 999, fontWeight: 600 }}>{s}</span>
+              </div>
+              <div style={{ height: 12 }} />
+              <div style={{ fontSize: 14, color: WIRE.ink2 }}>{desc}</div>
+              <div style={{ height: 18 }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                <div>
+                  <div style={{ color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11, fontWeight: 600 }}>We offer</div>
+                  <div style={{ height: 6 }} />
+                  <Lines count={3} />
+                </div>
+                <div>
+                  <div style={{ color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 11, fontWeight: 600 }}>We ask</div>
+                  <div style={{ height: 6 }} />
+                  <Lines count={3} />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Sec>
+      <Sec pad={60} style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 44, fontWeight: 700, letterSpacing: -1.4 }}>Interested?</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 16, color: WIRE.ink2 }}>partners@fadejunkie.com</div>
+        <div style={{ height: 18 }} />
+        <Btn primary size="lg">Get in touch</Btn>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── PROFILE ─────────────────────────────────────────────────────────────
+function Profile({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={24}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 999, background: WIRE.fill2, border: `1px solid ${WIRE.line}` }} />
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3 }}>Marcus Reyes</div>
+            <div style={{ fontSize: 12, color: WIRE.ink2 }}>Member since March 2026</div>
+          </div>
+        </div>
+      </Sec>
+      <Sec alt pad={20}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {[['421', 'Questions seen'], ['328', 'Correct'], ['78%', 'Accuracy'], ['12', 'Sessions']].map(([v, l]) => (
+            <Card key={l} pad={14}>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.4 }}>{v}</div>
+              <div style={{ fontSize: 11, color: WIRE.ink2 }}>{l}</div>
+            </Card>
+          ))}
+        </div>
+      </Sec>
+      <Sec pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Recent activity</div>
+        <div style={{ height: 10 }} />
+        {[['2d ago', '38/50', 'Sanitation + Tools'], ['5d ago', '44/50', 'Mixed'], ['1w ago', '17/20', 'Anatomy']].map(([d, s, t]) => (
+          <div key={d} style={{ padding: '12px 0', borderTop: `1px solid ${WIRE.line}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{s}</div>
+              <div style={{ fontSize: 11, color: WIRE.ink3 }}>{t}</div>
+            </div>
+            <div style={{ fontSize: 11, color: WIRE.ink3 }}>{d}</div>
+          </div>
+        ))}
+      </Sec>
+      <Sec alt pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topic mastery</div>
+        <div style={{ height: 10 }} />
+        {['Sanitation 88%', 'Anatomy 75%', 'Tools 70%', 'Microbiology 42%', 'Diseases 55%'].map(t => {
+          const pct = parseInt(t.match(/\d+/)[0]);
+          return (
+            <div key={t} style={{ padding: '8px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <span>{t.replace(/ \d+%/, '')}</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', color: pct < 60 ? '#c4492a' : WIRE.ink2 }}>{pct}%</span>
+              </div>
+              <div style={{ height: 4, background: WIRE.line, borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: pct < 60 ? '#c4492a' : WIRE.accent }} />
+              </div>
+            </div>
+          );
+        })}
+      </Sec>
+      <Sec pad={16}>
+        <Card pad={14} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ fontSize: 18 }}>★</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>12 starred cards</div>
+            <div style={{ fontSize: 11, color: WIRE.ink3 }}>Jump into starred-only mode</div>
+          </div>
+          <Btn primary size="sm">Drill</Btn>
+        </Card>
+        {annot && <Note top={-30} side="right" width={130}>data-dense, no gamification</Note>}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function ProfileDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged />
+      <Sec pad={48}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '260px 1fr', gap: 40 }}>
+          <div>
+            <div style={{ width: 80, height: 80, borderRadius: 999, background: WIRE.fill2, border: `1px solid ${WIRE.line}` }} />
+            <div style={{ height: 14 }} />
+            <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.5 }}>Marcus Reyes</div>
+            <div style={{ fontSize: 12, color: WIRE.ink2 }}>marcus@…</div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, marginTop: 2 }}>Member since March 2026</div>
+            <div style={{ height: 20 }} />
+            <Card pad={14} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div>★</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>12 starred</div>
+                <div style={{ fontSize: 11, color: WIRE.ink3 }}>Starred-only mode</div>
+              </div>
+              <Btn ghost size="sm">Drill</Btn>
+            </Card>
+          </div>
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+              {[['421', 'Seen'], ['328', 'Correct'], ['78%', 'Accuracy'], ['12', 'Sessions']].map(([v, l]) => (
+                <Card key={l} pad={16}>
+                  <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.5 }}>{v}</div>
+                  <div style={{ fontSize: 11, color: WIRE.ink2 }}>{l}</div>
+                </Card>
+              ))}
+            </div>
+            <div style={{ height: 24 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <div>
+                <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Recent activity</div>
+                <div style={{ height: 10 }} />
+                {[['2d ago', '38/50', 'Sanitation + Tools'], ['5d ago', '44/50', 'Mixed'], ['1w ago', '17/20', 'Anatomy'], ['2w ago', '72/100', 'Full practice']].map(([d, s, t]) => (
+                  <div key={d + s} style={{ padding: '12px 0', borderTop: `1px solid ${WIRE.line}`, display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{s}</div>
+                      <div style={{ fontSize: 11, color: WIRE.ink3 }}>{t}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: WIRE.ink3 }}>{d}</div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topic mastery</div>
+                <div style={{ height: 10 }} />
+                {[['Sanitation', 88], ['Anatomy', 75], ['Tools', 70], ['History', 68], ['Diseases', 55], ['Microbiology', 42]].map(([t, pct]) => (
+                  <div key={t} style={{ padding: '8px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span>{t}</span>
+                      <span style={{ fontVariantNumeric: 'tabular-nums', color: pct < 60 ? '#c4492a' : WIRE.ink2 }}>{pct}%</span>
+                    </div>
+                    <div style={{ height: 5, background: WIRE.line, borderRadius: 3, marginTop: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: pct < 60 ? '#c4492a' : WIRE.accent }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── BARBER (Coming Soon) ────────────────────────────────────────────────
+function Barber({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={28}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>Coming Soon</Pill>
+        <div style={{ height: 12 }} />
+        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: -1.3, lineHeight: 1.02 }}>Tools for working barbers.</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 14, color: WIRE.ink2 }}>Commission, booth rent, and shop owners. Resources that actually help you earn and grow.</div>
+      </Sec>
+      <Sec alt pad={22}>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {[
+            ['Booking', 'Lightweight client booking that doesn\'t lock your data in.'],
+            ['Business', 'Taxes, booth rent math, client retention — shop-owner basics.'],
+            ['Community', 'Find other barbers. Share technique. Trade jobs.'],
+          ].map(([t, d]) => (
+            <Card key={t} pad={16} dashed style={{ opacity: 0.7 }}>
+              <Pill color={WIRE.ink3} bg={WIRE.fill}>Planned</Pill>
+              <div style={{ height: 10 }} />
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{t}</div>
+              <div style={{ fontSize: 12, color: WIRE.ink2, marginTop: 4 }}>{d}</div>
+            </Card>
+          ))}
+        </div>
+      </Sec>
+      <Sec pad={22}>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>Get notified when we launch our newsletter</div>
+        <div style={{ height: 10 }} />
+        <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ flex: 1, padding: '10px 12px', border: `1px solid ${WIRE.line}`, borderRadius: 4, fontSize: 13, color: WIRE.ink3 }}>you@shop.com</div>
+          <Btn primary>Notify me</Btn>
+        </div>
+        {annot && <Note top={0} side="right" width={140}>dashed cards = planned/unbuilt. email catch above fold-ish</Note>}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function BarberDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={72}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <Pill color={WIRE.ink2} bg={WIRE.fill}>Coming Soon</Pill>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2, lineHeight: 1 }}>Tools for working barbers.</div>
+          <div style={{ height: 16 }} />
+          <div style={{ fontSize: 18, color: WIRE.ink2, maxWidth: 600 }}>Commission, booth rent, and shop owners. Resources that actually help you earn and grow.</div>
+        </div>
+      </Sec>
+      <Sec alt pad={60}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          {[
+            ['Booking', 'Lightweight client booking that doesn\'t lock your data in.'],
+            ['Business', 'Taxes, booth rent math, client retention — shop-owner basics.'],
+            ['Community', 'Find other barbers. Share technique. Trade jobs.'],
+          ].map(([t, d]) => (
+            <Card key={t} pad={26} dashed style={{ opacity: 0.7 }}>
+              <Pill color={WIRE.ink3} bg={WIRE.fill}>Planned</Pill>
+              <div style={{ height: 14 }} />
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.3 }}>{t}</div>
+              <div style={{ fontSize: 14, color: WIRE.ink2, marginTop: 8 }}>{d}</div>
+            </Card>
+          ))}
+        </div>
+      </Sec>
+      <Sec pad={60}>
+        <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.8 }}>Get notified when we launch our newsletter</div>
+          <div style={{ height: 16 }} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1, padding: '12px 16px', border: `1px solid ${WIRE.line}`, borderRadius: 4, fontSize: 14, color: WIRE.ink3, textAlign: 'left' }}>you@shop.com</div>
+            <Btn primary size="lg">Notify me</Btn>
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+Object.assign(window, {
+  Flash, FlashDesktop,
+  QuizSetup, QuizActive, QuizResults, QuizSetupDesktop, QuizActiveDesktop, QuizResultsDesktop,
+  GroupHost, GroupPlayer, GroupLive, GroupEnd,
+  Partners, PartnersDesktop,
+  Profile, ProfileDesktop,
+  Barber, BarberDesktop,
+});
+
+
+=== lib/extras.jsx (51955 chars) ===
+// NavBar states, Account Settings, Quiz non-auth variations, and Education Hub
+// landing (repurposed from old HomeV2).
+
+// ── NAV BAR STATES ───────────────────────────────────────────────────────
+// Four artboards showing: closed / open × logged-out / logged-in
+function NavClosedAnon({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={24}>
+        <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: closed · anon</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.4 }}>Default nav</div>
+        <div style={{ height: 8 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Logo left · hamburger right. No avatar when logged out.</div>
+        {annot && <Note top={-60} side="right" width={150}>baseline — how nav looks on every page for anon users</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+function NavClosedAuth({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" />
+      <Sec pad={24}>
+        <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: closed · signed in</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: -0.4 }}>With avatar</div>
+        <div style={{ height: 8 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Avatar appears left of hamburger. Tap avatar → dropdown. Tap hamburger → full menu.</div>
+        {annot && <Note top={-60} side="right" width={150}>two entry points: avatar for account, hamburger for navigation</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+function NavOpenAnon({ annot }) {
+  return (
+    <Page>
+      <NavBar open />
+      <Sec pad={24} style={{ paddingTop: 340 }}>
+        <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: open · anon</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Drawer drops down · Sign-in CTA anchors the bottom.</div>
+        {annot && <Note top={80} side="right" width={160}>hamburger-open variation (Anthony): drawer drops in from top of nav</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+function NavOpenAuth({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" open />
+      <Sec pad={24} style={{ paddingTop: 380 }}>
+        <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: open · signed in</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Signed-in users get a footer row with avatar + quick account links.</div>
+        {annot && <Note top={80} side="right" width={160}>full drawer + account footer row at bottom</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+function NavMenuAuth({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" menu />
+      <Sec pad={24} style={{ paddingTop: 240 }}>
+        <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: avatar menu</div>
+        <div style={{ height: 10 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Small dropdown from avatar · links to Profile, Account Settings, Starred, Sign out.</div>
+        {annot && <Note top={40} side="right" width={150}>shortcut menu. "Account Settings" lives here.</Note>}
+      </Sec>
+    </Page>
+  );
+}
+
+// Desktop nav variants
+function NavClosedAnonDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <Sec pad={60}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: closed · anon</div>
+          <div style={{ height: 10 }} />
+          <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1 }}>Default nav</div>
+        </div>
+      </Sec>
+    </Page>
+  );
+}
+function NavOpenAnonDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar open />
+      <Sec pad={60} style={{ paddingTop: 380 }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: open · anon</div>
+          <div style={{ height: 10 }} />
+          <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1 }}>Hamburger open</div>
+          {annot && <Note top={-100} side="left" width={180}>on desktop the drawer can fullscreen or stay as overlay — wireframe shows overlay variant</Note>}
+        </div>
+      </Sec>
+    </Page>
+  );
+}
+function NavOpenAuthDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Education Hub" open />
+      <Sec pad={60} style={{ paddingTop: 420 }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>State: open · signed in</div>
+        </div>
+      </Sec>
+    </Page>
+  );
+}
+
+// ── ACCOUNT SETTINGS ─────────────────────────────────────────────────────
+function AccountSettings({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Account" />
+      <Sec pad={24}>
+        <Btn ghost size="sm">← Profile</Btn>
+        <div style={{ height: 14 }} />
+        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -1.1 }}>Account settings</div>
+        <div style={{ height: 8 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Manage your profile, study preferences, and data.</div>
+      </Sec>
+
+      <Sec alt pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Profile</div>
+        <div style={{ height: 10 }} />
+        <Card pad={16}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 999, background: WIRE.fill2, border: `1px solid ${WIRE.line}` }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Marcus Reyes</div>
+              <div style={{ fontSize: 11, color: WIRE.ink3 }}>Signed in with Google</div>
+            </div>
+            <Btn ghost size="sm">Change</Btn>
+          </div>
+          <div style={{ height: 14, borderTop: `1px solid ${WIRE.line}`, margin: '14px -16px 14px' }} />
+          {[
+            ['Display name', 'Marcus R.'],
+            ['Email', 'marcus@…'],
+            ['School', 'Not set'],
+            ['Cohort', 'Not set'],
+          ].map(([l, v]) => (
+            <div key={l} style={{ padding: '10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${WIRE.line}`, fontSize: 13 }}>
+              <span style={{ color: WIRE.ink2 }}>{l}</span>
+              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ color: v === 'Not set' ? WIRE.ink3 : WIRE.ink }}>{v}</span>
+                <span style={{ color: WIRE.accent, fontSize: 12, fontWeight: 600 }}>Edit</span>
+              </span>
+            </div>
+          ))}
+        </Card>
+        {annot && <Note top={30} side="right" width={140}>Google OAuth means we show "signed in with Google" — no password mgmt needed</Note>}
+      </Sec>
+
+      <Sec pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Study preferences</div>
+        <div style={{ height: 10 }} />
+        <Card pad={4}>
+          {[
+            ['Default quiz length', '50 questions'],
+            ['Show answer explanations', 'On'],
+            ['Daily reminder', 'Off'],
+            ['Auto-star missed questions', 'On'],
+          ].map(([l, v], i) => (
+            <div key={l} style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: i === 0 ? 'none' : `1px solid ${WIRE.line}`, fontSize: 13 }}>
+              <span>{l}</span>
+              <span style={{ fontSize: 12, color: WIRE.ink2, display: 'flex', gap: 8, alignItems: 'center' }}>
+                {v}
+                {typeof v === 'string' && (v === 'On' || v === 'Off') && (
+                  <div style={{ width: 32, height: 18, background: v === 'On' ? WIRE.accent : WIRE.fill, borderRadius: 999, position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 2, [v === 'On' ? 'right' : 'left']: 2, width: 14, height: 14, background: '#fff', borderRadius: 999 }} />
+                  </div>
+                )}
+              </span>
+            </div>
+          ))}
+        </Card>
+      </Sec>
+
+      <Sec alt pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Data & privacy</div>
+        <div style={{ height: 10 }} />
+        <Card pad={4}>
+          {[
+            ['Export study data', 'Download CSV'],
+            ['Reset progress', 'Clear all answers'],
+            ['Delete account', 'Permanent'],
+          ].map(([l, v], i) => (
+            <div key={l} style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: i === 0 ? 'none' : `1px solid ${WIRE.line}`, fontSize: 13 }}>
+              <div>
+                <div style={{ fontWeight: 500, color: l === 'Delete account' ? '#c4492a' : WIRE.ink }}>{l}</div>
+                <div style={{ fontSize: 11, color: WIRE.ink3, marginTop: 2 }}>{v}</div>
+              </div>
+              <span style={{ color: WIRE.ink3 }}>→</span>
+            </div>
+          ))}
+        </Card>
+        {annot && <Note top={0} side="right" width={140}>data export + reset explicit. destructive actions ink-red</Note>}
+      </Sec>
+
+      <Sec pad={20}>
+        <Btn ghost full>Sign out</Btn>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function AccountSettingsDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar logged title="Account" />
+      <Sec pad={60}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <Btn ghost size="sm">← Profile</Btn>
+          <div style={{ height: 18 }} />
+          <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -1.8 }}>Account settings</div>
+          <div style={{ height: 10 }} />
+          <div style={{ fontSize: 16, color: WIRE.ink2 }}>Manage your profile, study preferences, and data.</div>
+        </div>
+      </Sec>
+      <Sec alt pad={48}>
+        <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: '220px 1fr', gap: 40 }}>
+          {/* Side nav */}
+          <div>
+            {['Profile', 'Study preferences', 'Notifications', 'Data & privacy', 'Danger zone'].map((t, i) => (
+              <div key={t} style={{
+                padding: '10px 12px', fontSize: 13,
+                color: i === 0 ? WIRE.accent : WIRE.ink2,
+                background: i === 0 ? WIRE.accentSoft : 'transparent',
+                borderRadius: 6, fontWeight: i === 0 ? 600 : 400, marginBottom: 2,
+              }}>{t}</div>
+            ))}
+            {annot && <Note top={-10} side="right" width={140}>anchor-linked side nav on desktop; accordion on mobile</Note>}
+          </div>
+
+          <div>
+            <Card pad={24}>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3 }}>Profile</div>
+              <div style={{ height: 6 }} />
+              <div style={{ fontSize: 13, color: WIRE.ink2 }}>How you show up in group sessions.</div>
+              <div style={{ height: 18 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ width: 72, height: 72, borderRadius: 999, background: WIRE.fill2, border: `1px solid ${WIRE.line}` }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600 }}>Marcus Reyes</div>
+                  <div style={{ fontSize: 12, color: WIRE.ink3 }}>Signed in with Google · marcus@…</div>
+                </div>
+                <Btn ghost size="sm">Change photo</Btn>
+              </div>
+              <div style={{ height: 20 }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {[
+                  ['Display name', 'Marcus R.'],
+                  ['Pronouns', '—'],
+                  ['School', 'Not set'],
+                  ['Cohort', 'Not set'],
+                ].map(([l, v]) => (
+                  <div key={l}>
+                    <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>{l}</div>
+                    <div style={{ padding: '10px 12px', border: `1px solid ${WIRE.line}`, borderRadius: 6, fontSize: 13, color: v === 'Not set' || v === '—' ? WIRE.ink3 : WIRE.ink }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ height: 18 }} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <Btn ghost size="sm">Cancel</Btn>
+                <Btn primary size="sm">Save changes</Btn>
+              </div>
+            </Card>
+
+            <div style={{ height: 18 }} />
+            <Card pad={24}>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3 }}>Study preferences</div>
+              <div style={{ height: 14 }} />
+              {[
+                ['Default quiz length', '50 questions'],
+                ['Show answer explanations', 'On'],
+                ['Daily reminder', 'Off'],
+                ['Auto-star missed questions', 'On'],
+              ].map(([l, v], i) => (
+                <div key={l} style={{ padding: '14px 0', borderTop: i === 0 ? 'none' : `1px solid ${WIRE.line}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14 }}>
+                  <span>{l}</span>
+                  <span style={{ color: WIRE.ink2, fontSize: 13, display: 'flex', gap: 10, alignItems: 'center' }}>
+                    {v}
+                    {(v === 'On' || v === 'Off') && (
+                      <div style={{ width: 36, height: 20, background: v === 'On' ? WIRE.accent : WIRE.fill2, borderRadius: 999, position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: 2, [v === 'On' ? 'right' : 'left']: 2, width: 16, height: 16, background: '#fff', borderRadius: 999 }} />
+                      </div>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── QUIZ NON-AUTH VARIATIONS (with sign-in banner) ──────────────────────
+function SignInBanner({ size = 'md' }) {
+  const pad = size === 'lg' ? '14px 40px' : '10px 16px';
+  const fs = size === 'lg' ? 14 : 12;
+  return (
+    <div style={{ background: WIRE.accentSoft, padding: pad, fontSize: fs, color: WIRE.accent, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ width: 14, height: 14, borderRadius: 999, background: WIRE.accent, color: '#fff', fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>!</span>
+        <span>Guest mode · your score won't save.</span>
+      </div>
+      <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>Sign in →</span>
+    </div>
+  );
+}
+
+function QuizSetupAnon({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <SignInBanner />
+      <Sec pad={24}>
+        <Btn ghost size="sm">← Hub</Btn>
+        <div style={{ height: 12 }} />
+        <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1.2 }}>Practice Quiz</div>
+        <div style={{ height: 8 }} />
+        <div style={{ fontSize: 13, color: WIRE.ink2 }}>Free to use — sign in later to save your session.</div>
+
+        <div style={{ height: 24 }} />
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Question count</div>
+        <div style={{ height: 10 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          {['20', '50', '100', '150'].map((n, i) => (
+            <div key={n} style={{
+              padding: '14px 0', textAlign: 'center', fontWeight: 700, fontSize: 16,
+              border: i === 1 ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+              background: i === 1 ? WIRE.accentSoft : '#fff',
+              color: i === 1 ? WIRE.accent : WIRE.ink,
+              borderRadius: 8,
+            }}>{n}</div>
+          ))}
+        </div>
+        <div style={{ height: 20 }} />
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topics</div>
+        <div style={{ height: 10 }} />
+        <Card pad={12} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 13 }}>All 17 topics</span>
+          <span style={{ fontSize: 12, color: WIRE.accent, fontWeight: 600 }}>Choose ▾</span>
+        </Card>
+        <div style={{ height: 20 }} />
+        <Btn primary full size="lg">Start Quiz as guest</Btn>
+        <div style={{ height: 10 }} />
+        <Btn ghost full>Sign in to save progress</Btn>
+        {annot && <Note top={30} side="right" width={160}>banner on top + secondary "sign in" CTA so guest mode is clear without blocking</Note>}
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function QuizActiveAnon({ annot }) {
+  return (
+    <Page>
+      <SignInBanner />
+      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${WIRE.line}` }}>
+        <div style={{ fontSize: 12, color: WIRE.ink2 }}>Exit quiz</div>
+        <div style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: WIRE.accent }}>18:42</div>
+      </div>
+      <div style={{ height: 3, background: WIRE.line }}>
+        <div style={{ height: '100%', width: '28%', background: WIRE.accent }} />
+      </div>
+      <div style={{ padding: '20px 16px' }}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Question 14 of 50 · Sanitation</div>
+        <div style={{ height: 12 }} />
+        <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: -0.2, lineHeight: 1.35 }}>
+          Which of the following is the most effective method for sanitizing metal implements between clients?
+        </div>
+        <div style={{ height: 20 }} />
+        <div style={{ display: 'grid', gap: 8 }}>
+          {[
+            ['A', 'Wiping with isopropyl alcohol', 'n'],
+            ['B', 'EPA-registered hospital disinfectant, 10 min', 's'],
+            ['C', 'Soap and warm water', 'n'],
+            ['D', 'UV light only', 'n'],
+          ].map(([l, t, st]) => (
+            <div key={l} style={{
+              padding: 14, borderRadius: 8, display: 'flex', gap: 12, alignItems: 'center',
+              border: st === 's' ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+              background: st === 's' ? WIRE.accentSoft : '#fff',
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 999,
+                background: st === 's' ? WIRE.accent : WIRE.fill,
+                color: st === 's' ? '#fff' : WIRE.ink2,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700,
+              }}>{l}</div>
+              <div style={{ fontSize: 14, flex: 1 }}>{t}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ height: 16 }} />
+        <Btn primary full size="lg">Next →</Btn>
+        {annot && <Note top={30} side="right" width={150}>active quiz keeps the banner — students shouldn't forget they're not saving</Note>}
+      </div>
+    </Page>
+  );
+}
+
+function QuizResultsAnon({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <SignInBanner />
+      <Sec pad={28} style={{ textAlign: 'center' }}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>Quiz Complete</Pill>
+        <div style={{ height: 14 }} />
+        <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -2, lineHeight: 1 }}>38<span style={{ color: WIRE.ink3 }}>/50</span></div>
+        <div style={{ height: 6 }} />
+        <div style={{ fontSize: 22, fontWeight: 700, color: WIRE.accent }}>76%</div>
+      </Sec>
+      {/* Sign-in upsell right after score so the friction is where the value is */}
+      <Sec pad={20}>
+        <Card pad={18} style={{ background: WIRE.accentSoft, border: `1px solid rgba(0,117,222,0.2)` }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: WIRE.accent }}>Save this score?</div>
+          <div style={{ height: 6 }} />
+          <div style={{ fontSize: 12, color: WIRE.ink2 }}>Sign in with Google to keep your history, track weak topics, and pick up where you left off.</div>
+          <div style={{ height: 12 }} />
+          <Btn primary full>Sign in with Google</Btn>
+        </Card>
+        {annot && <Note top={-10} side="right" width={150}>results screen = peak motivation. biggest sign-in prompt lives here.</Note>}
+      </Sec>
+      <Sec alt pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>By topic</div>
+        <div style={{ height: 12 }} />
+        {[['Sanitation', 90], ['Anatomy', 80], ['Tools', 75], ['Microbiology', 42], ['History', 88]].map(([t, pct]) => (
+          <div key={t} style={{ padding: '10px 0', borderTop: `1px solid ${WIRE.line}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ fontWeight: 500 }}>{t}</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', color: pct < 60 ? '#c4492a' : WIRE.ink2 }}>{pct}%</span>
+            </div>
+            <div style={{ height: 6 }} />
+            <div style={{ height: 5, background: WIRE.line, borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: pct < 60 ? '#c4492a' : WIRE.accent }} />
+            </div>
+          </div>
+        ))}
+      </Sec>
+      <Sec pad={20}>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <Btn primary full>Review 12 Missed</Btn>
+          <Btn ghost full>Take Another Quiz</Btn>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// Desktop anon variants
+function QuizSetupAnonDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <SignInBanner size="lg" />
+      <Sec pad={60}>
+        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          <Btn ghost size="sm">← Hub</Btn>
+          <div style={{ height: 20 }} />
+          <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -1.8 }}>Practice Quiz</div>
+          <div style={{ height: 12 }} />
+          <div style={{ fontSize: 17, color: WIRE.ink2 }}>Free to use — sign in later to save your session.</div>
+          <div style={{ height: 36 }} />
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Question count</div>
+          <div style={{ height: 12 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            {['20', '50', '100', '150'].map((n, i) => (
+              <div key={n} style={{
+                padding: '20px 0', textAlign: 'center', fontWeight: 700, fontSize: 22,
+                border: i === 1 ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+                background: i === 1 ? WIRE.accentSoft : '#fff',
+                color: i === 1 ? WIRE.accent : WIRE.ink,
+                borderRadius: 12,
+              }}>{n}</div>
+            ))}
+          </div>
+          <div style={{ height: 24 }} />
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Topics</div>
+          <div style={{ height: 12 }} />
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['All', 'Sanitation', 'Anatomy', 'Tools', 'Microbiology', '+ 13 more'].map((t, i) => (
+              <Btn key={t} primary={i === 0} ghost={i !== 0} size="sm">{t}</Btn>
+            ))}
+          </div>
+          <div style={{ height: 32 }} />
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Btn primary size="lg">Start as guest</Btn>
+            <Btn ghost size="lg">Sign in to save progress</Btn>
+          </div>
+          {annot && <Note top={40} side="right" width={160}>desktop: dual CTA — start vs. sign-in, not one blocking the other</Note>}
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+function QuizActiveAnonDesktop({ annot }) {
+  return (
+    <Page>
+      <SignInBanner size="lg" />
+      <div style={{ padding: '16px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${WIRE.line}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Btn ghost size="sm">Exit</Btn>
+          <span style={{ fontSize: 12, color: WIRE.ink2 }}>Question 14 of 50</span>
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: WIRE.accent }}>18:42</div>
+      </div>
+      <div style={{ height: 3, background: WIRE.line }}><div style={{ height: '100%', width: '28%', background: WIRE.accent }} /></div>
+      <Sec pad={60}>
+        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+          <Pill color={WIRE.ink2} bg={WIRE.fill}>Sanitation</Pill>
+          <div style={{ height: 14 }} />
+          <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: -0.4, lineHeight: 1.3 }}>
+            Which of the following is the most effective method for sanitizing metal implements between clients?
+          </div>
+          <div style={{ height: 28 }} />
+          <div style={{ display: 'grid', gap: 10 }}>
+            {[['A', 'Wiping with isopropyl alcohol', 'n'], ['B', 'EPA-registered hospital disinfectant, 10 min', 's'], ['C', 'Soap and warm water', 'n'], ['D', 'UV light only', 'n']].map(([l, t, st]) => (
+              <div key={l} style={{
+                padding: '16px 20px',
+                border: st === 's' ? `1.5px solid ${WIRE.accent}` : `1px solid ${WIRE.line}`,
+                background: st === 's' ? WIRE.accentSoft : '#fff',
+                borderRadius: 10, display: 'flex', gap: 14, alignItems: 'center',
+              }}>
+                <div style={{ width: 32, height: 32, borderRadius: 999, background: st === 's' ? WIRE.accent : WIRE.fill, color: st === 's' ? '#fff' : WIRE.ink2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{l}</div>
+                <div style={{ fontSize: 16 }}>{t}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ height: 24 }} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Btn primary size="lg">Next →</Btn>
+          </div>
+        </div>
+      </Sec>
+    </Page>
+  );
+}
+
+function QuizResultsAnonDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar />
+      <SignInBanner size="lg" />
+      <Sec pad={60} style={{ textAlign: 'center' }}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>Quiz Complete</Pill>
+        <div style={{ height: 18 }} />
+        <div style={{ fontSize: 120, fontWeight: 700, letterSpacing: -4, lineHeight: 1 }}>38<span style={{ color: WIRE.ink3 }}>/50</span></div>
+        <div style={{ fontSize: 32, fontWeight: 700, color: WIRE.accent }}>76%</div>
+      </Sec>
+      <Sec alt pad={60}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 40 }}>
+          <div>
+            <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>By topic</div>
+            <div style={{ height: 14 }} />
+            {[['Sanitation', 90], ['Anatomy', 80], ['Tools', 75], ['History', 88], ['Microbiology', 42], ['Diseases', 58]].map(([t, pct]) => (
+              <div key={t} style={{ padding: '12px 0', borderTop: `1px solid ${WIRE.line}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                  <span style={{ fontWeight: 500 }}>{t}</span>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', color: pct < 60 ? '#c4492a' : WIRE.ink2 }}>{pct}%</span>
+                </div>
+                <div style={{ height: 6 }} />
+                <div style={{ height: 6, background: WIRE.line, borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: pct < 60 ? '#c4492a' : WIRE.accent }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div>
+            {/* Prominent upsell */}
+            <Card pad={22} style={{ background: WIRE.accentSoft, border: `1.5px solid ${WIRE.accent}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: WIRE.accent, textTransform: 'uppercase', letterSpacing: 1 }}>Guest score</div>
+              <div style={{ height: 6 }} />
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.3 }}>Save this session</div>
+              <div style={{ height: 4 }} />
+              <div style={{ fontSize: 13, color: WIRE.ink2 }}>Sign in to keep your history, track weak topics, and resume where you left off.</div>
+              <div style={{ height: 14 }} />
+              <Btn primary>Sign in with Google</Btn>
+            </Card>
+            <div style={{ height: 14 }} />
+            <div style={{ display: 'grid', gap: 8 }}>
+              <Btn ghost>Review 12 Missed</Btn>
+              <Btn ghost>Take Another Quiz</Btn>
+            </div>
+            {annot && <Note top={20} side="left" width={150}>guest score becomes the upsell hook — not the topic breakdown</Note>}
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+// ── EDUCATION HUB LANDING (repurposed from HomeV2) ──────────────────────
+// Anthony: "use this design for a separate Education Hub landing page since
+// it leans into study resources". This is the product-forward design.
+function EduLanding({ annot }) {
+  return (
+    <Page>
+      <NavBar title="Education Hub" />
+      <Sec pad={28}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>For Texas Barber Students</Pill>
+        <div style={{ height: 14 }} />
+        <div style={{ fontSize: 42, fontWeight: 700, letterSpacing: -1.6, lineHeight: 1.02 }}>
+          300 state board<br/>questions. Free.
+        </div>
+        <div style={{ height: 12 }} />
+        <div style={{ color: WIRE.ink2, fontSize: 14 }}>
+          Study between clients. Flip cards, run timed quizzes, or host your cohort.
+        </div>
+        <div style={{ height: 20 }} />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn primary size="lg">Start Studying</Btn>
+          <Btn ghost size="lg">How it works</Btn>
+        </div>
+        <div style={{ height: 24 }} />
+        <Placeholder label="Flashcard mock · front" h={200} />
+        {annot && <Note top={16} side="right" width={160}>repurposed from Home V2 — now the dedicated Education Hub landing (per Anthony)</Note>}
+      </Sec>
+
+      {/* Mode quick-pick */}
+      <Sec alt pad={28}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Three ways to study</div>
+        <div style={{ height: 16 }} />
+        <div style={{ display: 'grid', gap: 10 }}>
+          {[
+            ['Flashcards', '300 cards · 17 topics', null, 'assets/flashcard-icon.png'],
+            ['Practice Quiz', '20 · 50 · 100 · 150', null, 'assets/quiz-icon.png'],
+            ['Group Mode', 'Live · with your class', 'Soon', 'assets/group-study-icon.png'],
+          ].map(([t, s, soon, icon]) => (
+            <div key={t} style={{ background: '#fff', border: `1px solid ${WIRE.line}`, borderRadius: 8, padding: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <img src={icon} alt="" style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{t}</div>
+                <div style={{ fontSize: 11, color: WIRE.ink2 }}>{s}</div>
+              </div>
+              {soon ? <span style={{ fontSize: 9, textTransform: 'uppercase', color: WIRE.ink3 }}>{soon}</span> : <span style={{ color: WIRE.ink3 }}>→</span>}
+            </div>
+          ))}
+        </div>
+      </Sec>
+
+      {/* Topic browse */}
+      <Sec pad={28}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Or pick a topic</div>
+        <div style={{ height: 14 }} />
+        {['Sanitation · 42', 'Tools & Equipment · 38', 'Anatomy · 35', 'Microbiology · 28'].map(t => (
+          <div key={t} style={{ padding: '12px 0', borderTop: `1px solid ${WIRE.line}`, display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span>{t}</span>
+            <span style={{ color: WIRE.accent, fontWeight: 600 }}>Open →</span>
+          </div>
+        ))}
+        <div style={{ height: 12 }} />
+        <Btn ghost full>See all 17 topics</Btn>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+function EduLandingDesktop({ annot }) {
+  return (
+    <Page>
+      <NavBar title="Education Hub" />
+      <Sec pad={72} style={{ position: 'relative' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+          <div>
+            <Pill color={WIRE.ink2} bg={WIRE.fill}>For Texas Barber Students</Pill>
+            <div style={{ height: 18 }} />
+            <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2.1, lineHeight: 1.0 }}>300 state board questions. Free.</div>
+            <div style={{ height: 16 }} />
+            <div style={{ color: WIRE.ink2, fontSize: 18 }}>Study between clients. Flip cards, run timed quizzes, or host your cohort.</div>
+            <div style={{ height: 24 }} />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <Btn primary size="lg">Start Studying</Btn>
+              <Btn ghost size="lg">How it works</Btn>
+            </div>
+            <div style={{ height: 18 }} />
+            <div style={{ fontSize: 12, color: WIRE.ink3 }}>No signup needed · progress saves with Google</div>
+          </div>
+          <Placeholder label="Flashcard product preview · interactive flip mock" h={360} />
+        </div>
+        {annot && <Note top={80} side="right" width={200}>Anthony: repurpose this product-forward design as the dedicated Education Hub landing (not the home page)</Note>}
+      </Sec>
+
+      <Sec alt pad={64}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1, maxWidth: 560 }}>Three ways to study. Pick what fits the 20 minutes you have.</div>
+          <div style={{ height: 28 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {[
+              ['Flashcards', '300 cards across 17 topics. Star, filter, drill.', null, 'assets/flashcard-icon.png'],
+              ['Practice Quiz', 'Timed. 20 · 50 · 100 · 150. See weak topics after.', null, 'assets/quiz-icon.png'],
+              ['Group Mode', 'Live 6-char room with your class.', 'Coming Soon', 'assets/group-study-icon.png'],
+            ].map(([t, s, soon, icon]) => (
+              <Card key={t} pad={24} style={{ position: 'relative', minHeight: 180 }}>
+                {soon && <span style={{ position: 'absolute', top: 14, right: 14, fontSize: 10, textTransform: 'uppercase', color: WIRE.ink3 }}>{soon}</span>}
+                <img src={icon} alt="" style={{ width: 72, height: 72, objectFit: 'contain', marginBottom: 10, display: 'block' }} />
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.2 }}>{t}</div>
+                <div style={{ height: 6 }} />
+                <div style={{ fontSize: 14, color: WIRE.ink2 }}>{s}</div>
+                <div style={{ height: 14 }} />
+                <Btn ghost size="sm">Open →</Btn>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Sec>
+
+      <Sec pad={64}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 12, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Browse by topic · 17 total</div>
+          <div style={{ height: 14 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, background: WIRE.line, border: `1px solid ${WIRE.line}` }}>
+            {[
+              ['Sanitation', 42], ['Tools & Equipment', 38],
+              ['Anatomy', 35], ['Microbiology', 28],
+              ['Diseases', 24], ['Life Skills', 22],
+              ['History', 18], ['Ergonomics', 16],
+            ].map(([t, n]) => (
+              <div key={t} style={{ background: '#fff', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{t}</div>
+                  <div style={{ fontSize: 12, color: WIRE.ink3 }}>{n} cards</div>
+                </div>
+                <span style={{ color: WIRE.ink3 }}>→</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Sec>
+      <Footer />
+    </Page>
+  );
+}
+
+Object.assign(window, {
+  NavClosedAnon, NavClosedAuth, NavOpenAnon, NavOpenAuth, NavMenuAuth,
+  NavClosedAnonDesktop, NavOpenAnonDesktop, NavOpenAuthDesktop,
+  AccountSettings, AccountSettingsDesktop,
+  QuizSetupAnon, QuizActiveAnon, QuizResultsAnon,
+  QuizSetupAnonDesktop, QuizActiveAnonDesktop, QuizResultsAnonDesktop,
+  EduLanding, EduLandingDesktop,
+  EduLandingEmbed, EduLandingEmbedDesktop,
+});
+
+// ── EDU LANDING — INLINE EMBED VARIATION (Anthony) ───────────────────────
+// Same page structure, but the "Three ways to study" rows are now expandable
+// in place. Clicking a row opens a mini Flashcard/Quiz widget below it;
+// other rows stay visible. The widget has a minimize affordance to collapse
+// back to the row.
+
+// ── mini embeds ──
+function MiniFlashcardEmbed({ onMin }) {
+  const [flipped, setFlipped] = React.useState(false);
+  const [i, setI] = React.useState(3);
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${WIRE.line}`, borderRadius: 10, padding: 14, marginTop: 8 }}>
+      {/* Embed header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: WIRE.accent, fontWeight: 700 }}>Live preview</span>
+          <span style={{ fontSize: 10, color: WIRE.ink3 }}>· Sanitation</span>
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={onMin} aria-label="Minimize" style={{ background: 'transparent', border: `1px solid ${WIRE.line}`, borderRadius: 4, width: 24, height: 24, fontSize: 14, lineHeight: 1, color: WIRE.ink2, cursor: 'pointer', padding: 0 }}>–</button>
+        </div>
+      </div>
+      {/* Card */}
+      <div
+        onClick={() => setFlipped(f => !f)}
+        style={{
+          border: `1.5px solid ${WIRE.line}`, borderRadius: 10, padding: '26px 16px',
+          background: flipped ? WIRE.fill : WIRE.bgAlt, minHeight: 120,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+          cursor: 'pointer',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: WIRE.ink3 }}>{flipped ? 'Answer' : 'Question'} · tap to flip</div>
+          <div style={{ height: 8 }} />
+          <div style={{ fontSize: 14, fontWeight: 600, color: WIRE.ink, lineHeight: 1.35 }}>
+            {flipped
+              ? 'An EPA-registered hospital disinfectant, minimum 10 minutes contact.'
+              : 'Most effective way to sanitize metal implements between clients?'}
+          </div>
+        </div>
+      </div>
+      {/* Footer */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, fontSize: 11, color: WIRE.ink2 }}>
+        <span>{i} / 300</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Btn ghost size="sm" onClick={(e) => { e.stopPropagation && e.stopPropagation(); setI(Math.max(1, i - 1)); setFlipped(false); }}>←</Btn>
+          <Btn ghost size="sm" onClick={(e) => { e.stopPropagation && e.stopPropagation(); setI(i + 1); setFlipped(false); }}>→</Btn>
+          <Btn primary size="sm">Open full</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniQuizEmbed({ onMin }) {
+  const [picked, setPicked] = React.useState(null);
+  const correct = 'B';
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${WIRE.line}`, borderRadius: 10, padding: 14, marginTop: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: WIRE.accent, fontWeight: 700 }}>Try a question</span>
+          <span style={{ fontSize: 10, color: WIRE.ink3 }}>· Sanitation · 1/3</span>
+        </div>
+        <button onClick={onMin} aria-label="Minimize" style={{ background: 'transparent', border: `1px solid ${WIRE.line}`, borderRadius: 4, width: 24, height: 24, fontSize: 14, lineHeight: 1, color: WIRE.ink2, cursor: 'pointer', padding: 0 }}>–</button>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: WIRE.ink }}>
+        Which is the most effective method for sanitizing metal implements?
+      </div>
+      <div style={{ height: 10 }} />
+      <div style={{ display: 'grid', gap: 6 }}>
+        {[['A', 'Wiping with isopropyl alcohol'], ['B', 'EPA-registered hospital disinfectant, 10 min'], ['C', 'Soap and warm water'], ['D', 'UV light only']].map(([l, t]) => {
+          const isPicked = picked === l;
+          const reveal = picked !== null;
+          const isCorrect = reveal && l === correct;
+          const isWrong = reveal && isPicked && l !== correct;
+          return (
+            <div key={l} onClick={() => !reveal && setPicked(l)} style={{
+              padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'center',
+              border: `1px solid ${isCorrect ? '#2e8b57' : isWrong ? '#c4492a' : isPicked ? WIRE.accent : WIRE.line}`,
+              background: isCorrect ? 'rgba(46,139,87,0.08)' : isWrong ? 'rgba(196,73,42,0.08)' : isPicked ? WIRE.accentSoft : '#fff',
+              borderRadius: 6, cursor: reveal ? 'default' : 'pointer',
+            }}>
+              <div style={{ width: 22, height: 22, borderRadius: 999, background: WIRE.fill, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{l}</div>
+              <div style={{ fontSize: 12, flex: 1 }}>{t}</div>
+              {isCorrect && <span style={{ fontSize: 11, color: '#2e8b57', fontWeight: 700 }}>✓</span>}
+              {isWrong && <span style={{ fontSize: 11, color: '#c4492a', fontWeight: 700 }}>✗</span>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 10 }}>
+        {picked && <Btn ghost size="sm" onClick={() => setPicked(null)}>Reset</Btn>}
+        <Btn primary size="sm">Take the full quiz →</Btn>
+      </div>
+    </div>
+  );
+}
+
+// ── Shared row list with expand/collapse ──
+function ModeEmbedList({ annot }) {
+  const [open, setOpen] = React.useState(null); // 'flash' | 'quiz' | null
+  const rows = [
+    { key: 'flash', t: 'Flashcards', s: '300 cards · 17 topics', embed: MiniFlashcardEmbed, icon: 'assets/flashcard-icon.png' },
+    { key: 'quiz', t: 'Practice Quiz', s: '20 · 50 · 100 · 150', embed: MiniQuizEmbed, icon: 'assets/quiz-icon.png' },
+    { key: 'group', t: 'Group Mode', s: 'Live · with your class', soon: 'Soon', icon: 'assets/group-study-icon.png' },
+  ];
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {rows.map(r => {
+        const isOpen = open === r.key;
+        const Embed = r.embed;
+        return (
+          <div key={r.key} style={{ background: '#fff', border: `1px solid ${isOpen ? WIRE.accent : WIRE.line}`, borderRadius: 10, overflow: 'hidden' }}>
+            <div
+              onClick={() => !r.soon && setOpen(isOpen ? null : r.key)}
+              style={{
+                padding: 14, display: 'flex', alignItems: 'center', gap: 14,
+                cursor: r.soon ? 'default' : 'pointer',
+                background: isOpen ? WIRE.accentSoft : 'transparent',
+              }}
+            >
+              <img src={r.icon} alt="" style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: WIRE.ink }}>{r.t}</div>
+                <div style={{ fontSize: 11, color: WIRE.ink2 }}>{r.s}</div>
+              </div>
+              {r.soon ? (
+                <span style={{ fontSize: 9, textTransform: 'uppercase', color: WIRE.ink3 }}>{r.soon}</span>
+              ) : (
+                <span style={{
+                  fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, fontWeight: 700,
+                  color: isOpen ? WIRE.accent : WIRE.ink3,
+                }}>{isOpen ? 'Open ▴' : 'Try here ▾'}</span>
+              )}
+            </div>
+            {isOpen && Embed && (
+              <div style={{ padding: '0 14px 14px' }}>
+                <Embed onMin={() => setOpen(null)} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {annot && <Note top={0} side="right" width={170}>variation: inline embed. click a row → mini widget expands below. other rows stay. ‘–’ minimizes back.</Note>}
+    </div>
+  );
+}
+
+function EduLandingEmbed({ annot }) {
+  return (
+    <Page>
+      <NavBar title="Education Hub" />
+      <Sec pad={28}>
+        <Pill color={WIRE.ink2} bg={WIRE.fill}>For Texas Barber Students</Pill>
+        <div style={{ height: 14 }} />
+        <div style={{ fontSize: 42, fontWeight: 700, letterSpacing: -1.6, lineHeight: 1.02 }}>
+          300 state board<br/>questions. Free.
+        </div>
+        <div style={{ height: 12 }} />
+        <div style={{ color: WIRE.ink2, fontSize: 14 }}>
+          Try a card or a question right here — no signup needed.
+        </div>
+      </Sec>
+
+      <Sec alt pad={20}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Three ways to study · try inline</div>
+        <div style={{ height: 14 }} />
+        <ModeEmbedList annot={annot} />
+      </Sec>
+
+      <Sec pad={28}>
+        <div style={{ fontSize: 11, color: WIRE.ink3, textTransform: 'uppercase', letterSpacing: 1 }}>Or pick a topic</div>
+        <div style={{ height: 14 }} />
+        {['Sanitation · 42', 'Tools & Equipment · 38', 'Anatomy · 35', 'Microbiology · 28'].map(t => (
+          <div key={t} style={{ padding: '12px 0', borderTop: `1px solid ${WIRE.line}`, display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span>{t}</span>
+            <span style={{ color: WIRE.accent, fontWeight: 600 }}>Open →</span>
+          </div>
+        ))}
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+function EduLandingEmbedDesktop({ annot }) {
+  const [open, setOpen] = React.useState('flash');
+  const rows = [
+    { key: 'flash', t: 'Flashcards', s: '300 cards across 17 topics. Star, filter, drill.', icon: 'assets/flashcard-icon.png' },
+    { key: 'quiz', t: 'Practice Quiz', s: 'Timed. 20 · 50 · 100 · 150. See weak topics after.', icon: 'assets/quiz-icon.png' },
+    { key: 'group', t: 'Group Mode', s: 'Live 6-char room with your class.', soon: 'Coming Soon', icon: 'assets/group-study-icon.png' },
+  ];
+  const Embed = open === 'flash' ? MiniFlashcardEmbed : open === 'quiz' ? MiniQuizEmbed : null;
+  return (
+    <Page>
+      <NavBar title="Education Hub" />
+      <Sec pad={72}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <Pill color={WIRE.ink2} bg={WIRE.fill}>For Texas Barber Students</Pill>
+          <div style={{ height: 18 }} />
+          <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2.1, lineHeight: 1.0 }}>300 state board questions. Free.</div>
+          <div style={{ height: 16 }} />
+          <div style={{ color: WIRE.ink2, fontSize: 18, maxWidth: 600 }}>Try a card or a question inline before you commit — no signup needed.</div>
+        </div>
+      </Sec>
+
+      <Sec alt pad={60}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1 }}>Three ways to study. Try any of them right here.</div>
+          <div style={{ height: 28 }} />
+          {/* Desktop layout: rows on left (always visible), widget panel on right */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'flex-start' }}>
+            {/* Rows */}
+            <div style={{ display: 'grid', gap: 10 }}>
+              {rows.map(r => {
+                const isOpen = open === r.key;
+                return (
+                  <div
+                    key={r.key}
+                    onClick={() => !r.soon && setOpen(r.key)}
+                    style={{
+                      background: '#fff', border: `1px solid ${isOpen ? WIRE.accent : WIRE.line}`,
+                      borderRadius: 12, padding: 22, display: 'flex', gap: 16, alignItems: 'flex-start',
+                      cursor: r.soon ? 'default' : 'pointer',
+                      boxShadow: isOpen ? `0 0 0 3px ${WIRE.accentSoft}` : 'none',
+                      position: 'relative',
+                    }}
+                  >
+                    <img src={r.icon} alt="" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: -0.2 }}>{r.t}</div>
+                      <div style={{ fontSize: 13, color: WIRE.ink2, marginTop: 4 }}>{r.s}</div>
+                      {!r.soon && (
+                        <div style={{ marginTop: 10, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 700, color: isOpen ? WIRE.accent : WIRE.ink3 }}>
+                          {isOpen ? '← showing preview' : 'Try inline →'}
+                        </div>
+                      )}
+                    </div>
+                    {r.soon && <span style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, textTransform: 'uppercase', color: WIRE.ink3 }}>{r.soon}</span>}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Widget panel */}
+            <div style={{ position: 'sticky', top: 88 }}>
+              {Embed ? (
+                <Embed onMin={() => setOpen(null)} />
+              ) : (
+                <div style={{ background: WIRE.bgAlt, border: `1.5px dashed ${WIRE.line}`, borderRadius: 12, padding: 40, textAlign: 'center' }}>
+                  <div style={{ fontSize: 14, color: WIRE.ink2 }}>Pick a mode on the left to preview it here →</div>
+                </div>
+              )}
+              {annot && <Note top={20} side="right" width={170}>desktop: rows + sticky widget panel. rows never collapse. minimize returns to the empty-state placeholder.</Note>}
+            </div>
+          </div>
+        </div>
+      </Sec>
+
+      <Footer />
+    </Page>
+  );
+}
+
+
