@@ -4,6 +4,8 @@ import { v } from "convex/values"
 export const saveQuizSession = mutation({
   args: {
     clerkId:        v.string(),
+    email:          v.optional(v.string()),
+    name:           v.optional(v.string()),
     topic:          v.string(),
     count:          v.number(),
     correct:        v.number(),
@@ -14,11 +16,21 @@ export const saveQuizSession = mutation({
       total:   v.number(),
     })),
   },
-  handler: async (ctx, { clerkId, topic, count, correct, total, topicBreakdown }) => {
-    const user = await ctx.db
+  handler: async (ctx, { clerkId, email, name, topic, count, correct, total, topicBreakdown }) => {
+    // Upsert user — create if this is their first quiz action
+    let user = await ctx.db
       .query("users")
       .withIndex("by_clerk_id", q => q.eq("clerkId", clerkId))
       .first()
+    if (!user) {
+      const userId = await ctx.db.insert("users", {
+        clerkId,
+        email: email ?? "",
+        name:  name ?? undefined,
+        createdAt: Date.now(),
+      })
+      user = await ctx.db.get(userId)
+    }
     if (!user) return
 
     await ctx.db.insert("quizSessions", {
@@ -77,13 +89,22 @@ export const getUserProgress = query({
       ? { completedAt: last.completedAt, score: last.correct, total: last.total, topic: last.topic }
       : null
 
+    const recentSessions = sorted.slice(0, 5).map(s => ({
+      completedAt: s.completedAt,
+      score:       s.correct,
+      total:       s.total,
+      topic:       s.topic,
+    }))
+
     return {
       totalSeen,
+      correctTotal,
       accuracy,
-      sessions:      sessions.length,
-      starred:       starredCards.length,
+      sessions:       sessions.length,
+      starred:        starredCards.length,
       topicAccuracy,
       lastSession,
+      recentSessions,
     }
   },
 })

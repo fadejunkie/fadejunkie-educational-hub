@@ -93,6 +93,8 @@ export default function Quiz() {
     const bd = Object.entries(breakdown).map(([t, { correct, total }]) => ({ topic: t, correct, total }))
     saveSession({
       clerkId:        user.id,
+      email:          user.emailAddresses[0]?.emailAddress,
+      name:           user.fullName ?? undefined,
       topic,
       count,
       correct:        score,
