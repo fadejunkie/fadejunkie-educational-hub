@@ -721,11 +721,29 @@ export default function PracticalExamGuide() {
         </div>
       </section>
 
+      {/* ── Mobile section selector ────────────────────────────────────────── */}
+      <div className="practical-mobile-nav" style={{ display: 'none', padding: '12px 16px', background: 'var(--color-warm-white)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', flexShrink: 0 }}>
+            {SECTIONS.findIndex(s => s.id === activeId) + 1} of {SECTIONS.length}
+          </span>
+          <select
+            value={activeId}
+            onChange={e => setActiveId(e.target.value)}
+            style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--color-black-95)', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}
+          >
+            {SECTIONS.map((s, idx) => (
+              <option key={s.id} value={s.id}>{idx + 1}. {s.name} · {s.timeLimit}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* ── Main body ──────────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px 80px', display: 'grid', gridTemplateColumns: 'min(280px, 100%) 1fr', gap: 32, alignItems: 'flex-start' }}>
+      <div className="practical-body" style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px 80px', display: 'grid', gridTemplateColumns: 'min(280px, 100%) 1fr', gap: 32, alignItems: 'flex-start' }}>
 
         {/* Section nav */}
-        <div style={{ position: 'sticky', top: 20 }}>
+        <div className="section-nav" style={{ position: 'sticky', top: 20 }}>
           <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.38)', marginBottom: 10 }}>Exam Sections</div>
           <div style={{ display: 'grid', gap: 4 }}>
             {SECTIONS.map((s, idx) => {
@@ -844,12 +862,13 @@ export default function PracticalExamGuide() {
       {/* ── Mobile layout override ────────────────────────────────────────── */}
       <style>{`
         @media (max-width: 767px) {
+          .practical-mobile-nav { display: block !important; }
           .practical-body {
             grid-template-columns: 1fr !important;
+            padding: 16px 16px 60px !important;
+            gap: 16px !important;
           }
-          .section-nav {
-            position: static !important;
-          }
+          .section-nav { display: none !important; }
         }
       `}</style>
     </div>
