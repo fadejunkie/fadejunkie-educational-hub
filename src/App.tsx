@@ -10,6 +10,7 @@ import Partners from './pages/Partners'
 import Barber from './pages/Barber'
 import Profile from './pages/Profile'
 import AccountSettings from './pages/AccountSettings'
+import PracticalExamGuide from './pages/PracticalExamGuide'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/education" element={<EducationHub />} />
           <Route path="/education/flash" element={<Flash />} />
           <Route path="/education/quiz" element={<Quiz />} />
+          <Route path="/education/practical" element={<PracticalExamGuide />} />
           <Route path="/education/room" element={<Room />} />
           <Route path="/partners" element={<Partners />} />
           <Route path="/barber" element={<Barber />} />
