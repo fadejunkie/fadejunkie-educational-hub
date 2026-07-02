@@ -31,3 +31,4 @@ dist-ssr
 .paul/
 fadejunkie-handoff.zip
 handoff-extract/
+.env*.local

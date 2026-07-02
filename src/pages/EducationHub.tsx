@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, useUser, SignInButton } from '@clerk/clerk-react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import PageMeta from '../components/PageMeta'
 import GuestBanner from '../components/GuestBanner'
+import { useEduAccess } from '../hooks/useEduAccess'
+
+const PASS_URL = import.meta.env.VITE_LIFETIME_PASS_URL as string | undefined
 
 // ── Mini embeds ────────────────────────────────────────────────────────────
 
@@ -285,10 +288,56 @@ function PracticalExamCallout() {
   )
 }
 
+// ── Paywall upgrade section (signed-in, no pass) ──────────────────────────
+
+function UpgradeSection() {
+  return (
+    <section style={{ padding: '52px 24px 40px', background: 'var(--color-white)' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <span className="fj-badge" style={{ marginBottom: 14, display: 'inline-flex' }}>Lifetime Access Pass</span>
+        <h1 style={{ fontSize: 'clamp(28px, 5vw, 50px)', fontWeight: 700, letterSpacing: '-1.4px', lineHeight: 1.04, color: 'var(--color-black-95)', margin: '0 0 12px' }}>
+          Your account is ready.<br />Unlock the study tools.
+        </h1>
+        <p style={{ fontSize: 15, color: 'rgba(0,0,0,0.6)', margin: '0 0 28px', lineHeight: 1.55 }}>
+          One payment of $15 gets you permanent access to every study tool — flashcards, quizzes, practical guide, and progress tracking. No subscriptions, no expiry.
+        </p>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          {PASS_URL ? (
+            <a href={PASS_URL} className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>
+              Get Lifetime Access · $15 →
+            </a>
+          ) : (
+            <a href="mailto:hello@fadejunkie.com?subject=Lifetime%20Pass" className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>
+              Get Lifetime Access · $15 →
+            </a>
+          )}
+          <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.38)' }}>One-time · Lifetime · No monthly fees</span>
+        </div>
+
+        {/* What's included */}
+        <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+          {[
+            '300 flashcards across 13 topics',
+            'Practice quiz — 20 to 150 questions',
+            '11-section Practical Exam Guide',
+            'Progress tracking + weak topic alerts',
+          ].map(f => (
+            <div key={f} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: 'rgba(0,0,0,0.65)' }}>
+              <span style={{ color: '#2e8b57', fontWeight: 700, flexShrink: 0 }}>✓</span>
+              {f}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ── Signed-in hub ─────────────────────────────────────────────────────────
 
 function SignedInHub() {
   const { user } = useUser()
+  const { hasAccess, loading: accessLoading } = useEduAccess()
   const progress = useQuery(
     api.progress.getUserProgress,
     user ? { clerkId: user.id } : 'skip'
@@ -309,6 +358,19 @@ function SignedInHub() {
     : []
 
   const allStrong = hasHistory && weakTopics.length === 0
+
+  if (accessLoading) {
+    return (
+      <section style={{ padding: '80px 24px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: 'var(--color-blue)', animation: 'spin 0.7s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </section>
+    )
+  }
+
+  if (!hasAccess) {
+    return <UpgradeSection />
+  }
 
   return (
     <>
@@ -468,7 +530,7 @@ export default function EducationHub() {
           provider: { '@type': 'Organization', name: 'FadeJunkie', url: 'https://fadejunkie.com' },
           educationalLevel: 'Vocational',
           teaches: 'Texas Barber State Board Exam',
-          isAccessibleForFree: true,
+          isAccessibleForFree: false,
           inLanguage: 'en',
         }}
       />
@@ -484,13 +546,18 @@ export default function EducationHub() {
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' as const }}>
               <div>
                 <h1 style={{ fontSize: 'clamp(30px, 5vw, 54px)', fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1.02, color: 'var(--color-black-95)', margin: '0 0 12px' }}>
-                  300 state board<br />questions. Free.
+                  300 state board<br />questions. $15 lifetime.
                 </h1>
-                <p style={{ fontSize: '15px', color: 'rgba(0,0,0,0.6)', margin: 0 }}>Try a card or a question right here — no signup needed.</p>
+                <p style={{ fontSize: '15px', color: 'rgba(0,0,0,0.6)', margin: '0 0 10px' }}>Try a sample right here — no signup needed. Full access is a one-time $15 pass.</p>
+                <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', margin: 0 }}>Account creation is free · lifetime pass = permanent access</p>
               </div>
               <div className="edu-hero-ctas" style={{ display: 'flex', gap: '10px', flexShrink: 0, flexWrap: 'wrap' as const }}>
-                <Link to="/education/flash" className="fj-btn-secondary" style={{ fontSize: '0.9375rem' }}>All Flashcards</Link>
-                <Link to="/education/quiz" className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>Full Practice Quiz →</Link>
+                <SignInButton mode="modal">
+                  <button className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>Get Lifetime Access · $15 →</button>
+                </SignInButton>
+                <SignInButton mode="modal">
+                  <button className="fj-btn-secondary" style={{ fontSize: '0.9375rem' }}>Create free account</button>
+                </SignInButton>
               </div>
             </div>
           </div>

@@ -9,6 +9,7 @@
  */
 
 import type * as barber from "../barber.js";
+import type * as eduAccess from "../eduAccess.js";
 import type * as partners from "../partners.js";
 import type * as progress from "../progress.js";
 import type * as starredCards from "../starredCards.js";
@@ -22,6 +23,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   barber: typeof barber;
+  eduAccess: typeof eduAccess;
   partners: typeof partners;
   progress: typeof progress;
   starredCards: typeof starredCards;

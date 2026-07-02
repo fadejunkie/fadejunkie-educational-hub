@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RotateCcw, Star } from 'lucide-react'
 import { ALL_FLASH_CARDS, TOPICS, type Topic } from '../data/studyData'
+import PaywallGate from '../components/PaywallGate'
 
 // Mode toggle shared between Flashcards and Quiz pages
 function ModeToggle({ mode }: { mode: 'flash' | 'quiz' }) {
@@ -81,6 +82,7 @@ export default function Flash() {
   const availableTopics = TOPICS.filter(t => t === 'All' || ALL_FLASH_CARDS.some(c => c.topic === t))
 
   return (
+    <PaywallGate>
     <section style={{ padding: '0 0 80px', minHeight: 'calc(100vh - 60px)' }}>
 
       {/* ── Compact top bar ── */}
@@ -119,31 +121,26 @@ export default function Flash() {
             Topic
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {availableTopics.map(t => {
-              const isDisabled = t === 'All'
-              return (
-                <button
-                  key={t}
-                  onClick={() => !isDisabled && handleTopicChange(t)}
-                  disabled={isDisabled}
-                  style={{
-                    padding: '7px 16px',
-                    borderRadius: 'var(--radius-pill)',
-                    border: '1px solid',
-                    borderColor: isDisabled ? 'rgba(0,0,0,0.07)' : topic === t ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
-                    background: isDisabled ? 'rgba(0,0,0,0.03)' : topic === t ? 'var(--color-blue)' : 'transparent',
-                    color: isDisabled ? 'rgba(0,0,0,0.25)' : topic === t ? 'var(--color-white)' : 'var(--color-warm-500)',
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    opacity: isDisabled ? 0.5 : 1,
-                    transition: 'all 0.12s',
-                  }}
-                >
-                  {t}
-                </button>
-              )
-            })}
+            {availableTopics.map(t => (
+              <button
+                key={t}
+                onClick={() => handleTopicChange(t)}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 'var(--radius-pill)',
+                  border: '1px solid',
+                  borderColor: topic === t ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
+                  background: topic === t ? 'var(--color-blue)' : 'transparent',
+                  color: topic === t ? 'var(--color-white)' : 'var(--color-warm-500)',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.12s',
+                }}
+              >
+                {t}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -283,5 +280,6 @@ export default function Flash() {
         )}
       </div>
     </section>
+    </PaywallGate>
   )
 }
