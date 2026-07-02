@@ -577,17 +577,17 @@ export default function EducationHub() {
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' as const }}>
               <div>
                 <h1 style={{ fontSize: 'clamp(30px, 5vw, 54px)', fontWeight: 700, letterSpacing: '-1.5px', lineHeight: 1.02, color: 'var(--color-black-95)', margin: '0 0 12px' }}>
-                  300 state board<br />questions. $15 lifetime.
+                  300 state board<br />questions. Free to start.
                 </h1>
-                <p style={{ fontSize: '15px', color: 'rgba(0,0,0,0.6)', margin: '0 0 10px' }}>Try a sample right here — no signup needed. Full access is a one-time $15 pass.</p>
-                <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', margin: 0 }}>Account creation is free · lifetime pass = permanent access</p>
+                <p style={{ fontSize: '15px', color: 'rgba(0,0,0,0.6)', margin: '0 0 10px' }}>Create a free account and start studying immediately. Full access — all topics, all sections — is a one-time $15 pass.</p>
+                <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.4)', margin: 0 }}>Free account · limited tools · $15 pass = full access</p>
               </div>
               <div className="edu-hero-ctas" style={{ display: 'flex', gap: '10px', flexShrink: 0, flexWrap: 'wrap' as const }}>
                 <SignInButton mode="modal">
-                  <button className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>Get Lifetime Access · $15 →</button>
+                  <button className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>Create free account →</button>
                 </SignInButton>
                 <SignInButton mode="modal">
-                  <button className="fj-btn-secondary" style={{ fontSize: '0.9375rem' }}>Create free account</button>
+                  <button className="fj-btn-secondary" style={{ fontSize: '0.9375rem' }}>Get Lifetime Access · $15</button>
                 </SignInButton>
               </div>
             </div>

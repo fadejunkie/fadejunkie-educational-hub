@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api'
 import { useUser } from '@clerk/clerk-react'
 import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, type Topic, type QuizCount } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
+import { useEduAccess } from '../hooks/useEduAccess'
 
 // Shared mode toggle (mirrors Flash.tsx)
 function ModeToggle({ mode }: { mode: 'flash' | 'quiz' }) {
@@ -54,6 +55,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function QuizContent() {
+  const { hasAccess } = useEduAccess()
   const [searchParams] = useSearchParams()
   const initialTopic = (searchParams.get('topic') as Topic) ?? 'All'
   const [phase, setPhase] = useState<Phase>('setup')
@@ -180,26 +182,31 @@ function QuizContent() {
               Topic
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {TOPICS.filter(t => t === 'All' || ALL_QUIZ_QUESTIONS.some(q => q.topic === t)).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTopic(t)}
-                  style={{
-                    padding: '7px 16px',
-                    borderRadius: 'var(--radius-pill)',
-                    border: '1px solid',
-                    borderColor: topic === t ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
-                    background: topic === t ? 'var(--color-blue)' : 'transparent',
-                    color: topic === t ? 'var(--color-white)' : 'var(--color-warm-500)',
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.12s',
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
+              {TOPICS.filter(t => t === 'All' || ALL_QUIZ_QUESTIONS.some(q => q.topic === t)).map(t => {
+                const isDisabled = !hasAccess && t === 'All'
+                return (
+                  <button
+                    key={t}
+                    onClick={() => !isDisabled && setTopic(t)}
+                    disabled={isDisabled}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 'var(--radius-pill)',
+                      border: '1px solid',
+                      borderColor: isDisabled ? 'rgba(0,0,0,0.07)' : topic === t ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
+                      background: isDisabled ? 'rgba(0,0,0,0.03)' : topic === t ? 'var(--color-blue)' : 'transparent',
+                      color: isDisabled ? 'rgba(0,0,0,0.25)' : topic === t ? 'var(--color-white)' : 'var(--color-warm-500)',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      opacity: isDisabled ? 0.5 : 1,
+                      transition: 'all 0.12s',
+                    }}
+                  >
+                    {t}
+                  </button>
+                )
+              })}
             </div>
           </div>
 

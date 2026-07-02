@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageMeta from '../components/PageMeta'
 import PaywallGate from '../components/PaywallGate'
+import { useEduAccess } from '../hooks/useEduAccess'
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -664,6 +665,7 @@ function SectionPanel({ section }: { section: Section }) {
 export default function PracticalExamGuide() {
   const [activeId, setActiveId] = useState(SECTIONS[0].id)
   const active = SECTIONS.find(s => s.id === activeId) ?? SECTIONS[0]
+  const { hasAccess } = useEduAccess()
 
   return (
     <PaywallGate>
@@ -735,7 +737,7 @@ export default function PracticalExamGuide() {
             style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--color-black-95)', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}
           >
             {SECTIONS.map((s, idx) => (
-              <option key={s.id} value={s.id}>{idx + 1}. {s.name} · {s.timeLimit}</option>
+              <option key={s.id} value={s.id} disabled={!hasAccess && idx >= 3}>{idx + 1}. {s.name} · {s.timeLimit}</option>
             ))}
           </select>
         </div>
@@ -750,10 +752,12 @@ export default function PracticalExamGuide() {
           <div style={{ display: 'grid', gap: 4 }}>
             {SECTIONS.map((s, idx) => {
               const isActive = s.id === activeId
+              const isLocked = !hasAccess && idx >= 3
               return (
                 <button
                   key={s.id}
-                  onClick={() => setActiveId(s.id)}
+                  onClick={() => !isLocked && setActiveId(s.id)}
+                  disabled={isLocked}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -762,10 +766,11 @@ export default function PracticalExamGuide() {
                     borderRadius: 8,
                     border: `1px solid ${isActive ? 'rgba(0,117,222,0.25)' : 'transparent'}`,
                     background: isActive ? 'rgba(0,117,222,0.06)' : 'transparent',
-                    cursor: 'pointer',
+                    cursor: isLocked ? 'not-allowed' : 'pointer',
                     textAlign: 'left',
                     width: '100%',
                     transition: 'all 0.1s',
+                    opacity: isLocked ? 0.38 : 1,
                   }}
                 >
                   <div style={{
