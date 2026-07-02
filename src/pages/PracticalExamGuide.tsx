@@ -729,11 +729,11 @@ export default function PracticalExamGuide() {
           </span>
           <select
             value={activeId}
-            onChange={e => setActiveId(e.target.value)}
+            onChange={e => { if (SECTIONS.findIndex(s => s.id === e.target.value) < 3) setActiveId(e.target.value) }}
             style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--color-black-95)', background: '#fff', border: '1px solid rgba(0,0,0,0.15)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' }}
           >
             {SECTIONS.map((s, idx) => (
-              <option key={s.id} value={s.id}>{idx + 1}. {s.name} · {s.timeLimit}</option>
+              <option key={s.id} value={s.id} disabled={idx >= 3}>{idx + 1}. {s.name} · {s.timeLimit}</option>
             ))}
           </select>
         </div>
@@ -748,10 +748,12 @@ export default function PracticalExamGuide() {
           <div style={{ display: 'grid', gap: 4 }}>
             {SECTIONS.map((s, idx) => {
               const isActive = s.id === activeId
+              const isLocked = idx >= 3
               return (
                 <button
                   key={s.id}
-                  onClick={() => setActiveId(s.id)}
+                  onClick={() => !isLocked && setActiveId(s.id)}
+                  disabled={isLocked}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -760,10 +762,11 @@ export default function PracticalExamGuide() {
                     borderRadius: 8,
                     border: `1px solid ${isActive ? 'rgba(0,117,222,0.25)' : 'transparent'}`,
                     background: isActive ? 'rgba(0,117,222,0.06)' : 'transparent',
-                    cursor: 'pointer',
+                    cursor: isLocked ? 'not-allowed' : 'pointer',
                     textAlign: 'left',
                     width: '100%',
                     transition: 'all 0.1s',
+                    opacity: isLocked ? 0.38 : 1,
                   }}
                 >
                   <div style={{
@@ -842,19 +845,26 @@ export default function PracticalExamGuide() {
                 ← {SECTIONS[SECTIONS.findIndex(s => s.id === activeId) - 1].name}
               </button>
             ) : <div />}
-            {SECTIONS.findIndex(s => s.id === activeId) < SECTIONS.length - 1 ? (
-              <button
-                onClick={() => setActiveId(SECTIONS[SECTIONS.findIndex(s => s.id === activeId) + 1].id)}
-                className="fj-btn-primary"
-                style={{ fontSize: 13, padding: '10px 18px' }}
-              >
-                {SECTIONS[SECTIONS.findIndex(s => s.id === activeId) + 1].name} →
-              </button>
-            ) : (
-              <div style={{ padding: '10px 18px', fontSize: 13, fontWeight: 700, borderRadius: 8, background: 'rgba(46,139,87,0.1)', color: '#2e8b57', border: '1px solid rgba(46,139,87,0.25)' }}>
-                ✓ All sections covered
-              </div>
-            )}
+            {(() => {
+              const currentIdx = SECTIONS.findIndex(s => s.id === activeId)
+              const nextIdx = currentIdx + 1
+              if (nextIdx < SECTIONS.length && nextIdx < 3) {
+                return (
+                  <button
+                    onClick={() => setActiveId(SECTIONS[nextIdx].id)}
+                    className="fj-btn-primary"
+                    style={{ fontSize: 13, padding: '10px 18px' }}
+                  >
+                    {SECTIONS[nextIdx].name} →
+                  </button>
+                )
+              }
+              return (
+                <div style={{ padding: '10px 18px', fontSize: 13, fontWeight: 700, borderRadius: 8, background: 'rgba(46,139,87,0.1)', color: '#2e8b57', border: '1px solid rgba(46,139,87,0.25)' }}>
+                  ✓ All sections covered
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>
