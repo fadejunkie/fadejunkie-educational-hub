@@ -369,7 +369,38 @@ function SignedInHub() {
   }
 
   if (!hasAccess) {
-    return <UpgradeSection />
+    return (
+      <>
+        <UpgradeSection />
+
+        {/* Demo preview — same content as guest, lets them play before buying */}
+        <section style={{ padding: '24px 24px 40px', background: 'var(--color-warm-white)', borderTop: '1px solid rgba(0,0,0,0.06)' }} className="edu-mobile-section">
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+            <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px' }}>Try the tools · preview</div>
+            <ModeEmbedList />
+          </div>
+        </section>
+
+        <section style={{ padding: '40px 24px', background: 'var(--color-warm-white)', borderTop: '1px solid rgba(0,0,0,0.06)' }} className="edu-desktop-section">
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: 'clamp(22px, 3vw, 32px)', fontWeight: 700, letterSpacing: '-0.8px', margin: '0 0 24px', color: 'var(--color-black-95)' }}>Try the study tools first.</h2>
+            <ModeEmbedDesktop />
+          </div>
+        </section>
+
+        <PracticalExamCallout />
+        <TopicBrowserSection />
+
+        <style>{`
+          .edu-mobile-section { display: block; }
+          .edu-desktop-section { display: none; }
+          @media (min-width: 768px) {
+            .edu-mobile-section { display: none; }
+            .edu-desktop-section { display: block; }
+          }
+        `}</style>
+      </>
+    )
   }
 
   return (
