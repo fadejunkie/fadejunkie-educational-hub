@@ -166,6 +166,7 @@ function QuizContent() {
           padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.1)',
           background: 'var(--color-white)', position: 'sticky', top: '56px', zIndex: 10,
         }}>
+          <div style={{ flex: 1 }} />
           <Link to="/education" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-warm-500)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
             ← Hub
           </Link>

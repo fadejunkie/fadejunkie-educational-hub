@@ -105,12 +105,13 @@ export default function Flash() {
         padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.1)',
         background: 'var(--color-white)', position: 'sticky', top: '56px', zIndex: 10,
       }}>
+        <div style={{ flex: 1 }} />
         <Link to="/education" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-warm-500)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
           ← Hub
         </Link>
         <div style={{ width: '1px', height: '18px', background: 'rgba(0,0,0,0.12)' }} />
         <ModeToggle mode="flash" />
-        <div style={{ flex: 1 }} />
+        <div style={{ width: '1px', height: '18px', background: 'rgba(0,0,0,0.12)' }} />
         {/* Starred toggle */}
         <button
           onClick={() => { setStarredOnly(s => !s); setIndex(0); setFlipped(false) }}
