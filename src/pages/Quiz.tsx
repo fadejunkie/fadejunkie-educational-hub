@@ -162,16 +162,20 @@ function QuizContent() {
       <section style={{ padding: '0 0 80px', minHeight: 'calc(100vh - 60px)' }}>
         {/* Compact top bar */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '10px',
-          padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.1)',
+          borderBottom: '1px solid rgba(0,0,0,0.1)',
           background: 'var(--color-white)', position: 'sticky', top: '56px', zIndex: 10,
         }}>
-          <div style={{ flex: 1 }} />
-          <Link to="/education" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-warm-500)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
-            ← Hub
-          </Link>
-          <div style={{ width: '1px', height: '18px', background: 'rgba(0,0,0,0.12)' }} />
-          <ModeToggle mode="quiz" />
+          <div style={{
+            maxWidth: '1200px', margin: '0 auto', padding: '0 20px',
+            height: '44px', display: 'flex', alignItems: 'center', gap: '10px',
+          }}>
+            <div style={{ flex: 1 }} />
+            <Link to="/education" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-warm-500)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
+              ← Hub
+            </Link>
+            <div style={{ width: '1px', height: '18px', background: 'rgba(0,0,0,0.12)' }} />
+            <ModeToggle mode="quiz" />
+          </div>
         </div>
 
         <div style={{ maxWidth: '560px', margin: '0 auto', padding: '48px 24px 0' }}>

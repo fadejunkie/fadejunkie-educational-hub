@@ -101,10 +101,13 @@ export default function Flash() {
 
       {/* ── Compact top bar ── */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.1)',
+        borderBottom: '1px solid rgba(0,0,0,0.1)',
         background: 'var(--color-white)', position: 'sticky', top: '56px', zIndex: 10,
       }}>
+        <div style={{
+          maxWidth: '1200px', margin: '0 auto', padding: '0 20px',
+          height: '44px', display: 'flex', alignItems: 'center', gap: '10px',
+        }}>
         <div style={{ flex: 1 }} />
         <Link to="/education" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-warm-500)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', marginRight: '4px' }}>
           ← Hub
@@ -126,6 +129,7 @@ export default function Flash() {
           <Star size={12} fill={starredOnly ? '#f5c400' : 'none'} stroke={starredOnly ? '#f5c400' : 'currentColor'} />
           {starredOnly ? `Starred (${starred.size})` : starred.size > 0 ? `★ ${starred.size}` : 'Starred only'}
         </button>
+        </div>
       </div>
 
       <div style={{ maxWidth: '560px', margin: '0 auto', padding: '40px 24px 0' }}>
