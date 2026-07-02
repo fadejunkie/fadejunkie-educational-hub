@@ -55,7 +55,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function QuizContent() {
-  const { hasAccess } = useEduAccess()
+  const { hasAccess, loading } = useEduAccess()
   const [searchParams] = useSearchParams()
   const initialTopic = (searchParams.get('topic') as Topic) ?? 'All'
   const [phase, setPhase] = useState<Phase>('setup')
@@ -69,6 +69,14 @@ function QuizContent() {
 
   const { user } = useUser()
   const saveSession = useMutation(api.progress.saveQuizSession)
+
+  // Once access resolves: if user can't use All, default to first specific topic
+  useEffect(() => {
+    if (!loading && !hasAccess && topic === 'All') {
+      const firstTopic = TOPICS.find(t => t !== 'All' && ALL_QUIZ_QUESTIONS.some(q => q.topic === t))
+      if (firstTopic) setTopic(firstTopic)
+    }
+  }, [loading, hasAccess])
 
   const currentQ = questions[qIndex]
   const progress = ((qIndex) / questions.length) * 100
