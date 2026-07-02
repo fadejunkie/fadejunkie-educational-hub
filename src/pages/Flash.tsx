@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RotateCcw, Star } from 'lucide-react'
 import { ALL_FLASH_CARDS, TOPICS, type Topic } from '../data/studyData'
@@ -35,7 +35,7 @@ function ModeToggle({ mode }: { mode: 'flash' | 'quiz' }) {
 }
 
 export default function Flash() {
-  const { hasAccess } = useEduAccess()
+  const { hasAccess, loading } = useEduAccess()
   const [searchParams] = useSearchParams()
   const initialTopic = (searchParams.get('topic') as Topic) ?? 'All'
   const [topic, setTopic] = useState<Topic>(initialTopic)
@@ -43,6 +43,18 @@ export default function Flash() {
   const [flipped, setFlipped] = useState(false)
   const [starred, setStarred] = useState<Set<number>>(new Set())
   const [starredOnly, setStarredOnly] = useState(false)
+
+  // Once access resolves: if user can't use All, default to first specific topic
+  useEffect(() => {
+    if (!loading && !hasAccess && topic === 'All') {
+      const firstTopic = TOPICS.find(t => t !== 'All' && ALL_FLASH_CARDS.some(c => c.topic === t))
+      if (firstTopic) {
+        setTopic(firstTopic)
+        setIndex(0)
+        setFlipped(false)
+      }
+    }
+  }, [loading, hasAccess])
 
   const deck = useMemo(() => {
     let cards = topic === 'All' ? ALL_FLASH_CARDS : ALL_FLASH_CARDS.filter(c => c.topic === topic)
