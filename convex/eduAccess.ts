@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server"
+import { internalMutation, query } from "./_generated/server"
 import { v } from "convex/values"
 
 /**
@@ -19,10 +19,11 @@ export const getEduAccess = query({
 
 /**
  * Admin-only: grant lifetime pass to a user by clerkId.
- * Run from the Convex dashboard after confirming payment.
- * TODO: Replace with Stripe webhook fulfillment.
+ * INTERNAL — not callable from any client. Run from the Convex dashboard,
+ * via `npx convex run eduAccess:grantEduAccess`, or from the Stripe webhook
+ * (see convex/http.ts / Phase 4). Never expose this to the browser.
  */
-export const grantEduAccess = mutation({
+export const grantEduAccess = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
     const user = await ctx.db
@@ -36,9 +37,9 @@ export const grantEduAccess = mutation({
 })
 
 /**
- * Revoke lifetime pass (admin).
+ * Revoke lifetime pass (admin). INTERNAL — not client-callable.
  */
-export const revokeEduAccess = mutation({
+export const revokeEduAccess = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
     const user = await ctx.db

@@ -53,12 +53,22 @@ export const setPartnerVisibility = mutation({
   },
 })
 
-// Public query — returns all visible partner profiles
+// Public query — returns all visible partner profiles.
+// Projects to public-safe fields only: never leak clerkId/userId (those enable
+// account-takeover attacks against the per-user functions). See SECURITY_AUDIT.md F5.
 export const listPartners = query({
   args: {},
   handler: async (ctx) => {
-    return ctx.db.query("partnerProfiles")
+    const rows = await ctx.db.query("partnerProfiles")
       .withIndex("by_visible", q => q.eq("isVisible", true))
       .collect()
+    return rows.map(p => ({
+      _id:         p._id,
+      name:        p.name,
+      handle:      p.handle,
+      avatarUrl:   p.avatarUrl,
+      type:        p.type,
+      description: p.description,
+    }))
   },
 })

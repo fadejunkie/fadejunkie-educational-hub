@@ -13,6 +13,8 @@ import type * as eduAccess from "../eduAccess.js";
 import type * as partners from "../partners.js";
 import type * as progress from "../progress.js";
 import type * as starredCards from "../starredCards.js";
+import type * as studyPreferences from "../studyPreferences.js";
+import type * as userProfile from "../userProfile.js";
 import type * as waitlist from "../waitlist.js";
 
 import type {
@@ -27,6 +29,8 @@ declare const fullApi: ApiFromModules<{
   partners: typeof partners;
   progress: typeof progress;
   starredCards: typeof starredCards;
+  studyPreferences: typeof studyPreferences;
+  userProfile: typeof userProfile;
   waitlist: typeof waitlist;
 }>;
 
