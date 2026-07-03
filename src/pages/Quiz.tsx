@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react'
 import { useMutation } from 'convex/react'
@@ -7,6 +7,7 @@ import { useUser } from '@clerk/clerk-react'
 import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, type Topic, type QuizCount } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
 import { useEduAccess } from '../hooks/useEduAccess'
+import { useStudyPreferences } from '../hooks/useStudyPreferences'
 
 // Shared mode toggle (mirrors Flash.tsx)
 function ModeToggle({ mode }: { mode: 'flash' | 'quiz' }) {
@@ -69,6 +70,8 @@ function QuizContent() {
 
   const { user } = useUser()
   const saveSession = useMutation(api.progress.saveQuizSession)
+  const starMissed = useMutation(api.starredCards.star)
+  const { prefs, loading: prefsLoading } = useStudyPreferences()
 
   // Once access resolves: if user can't use All, default to first specific topic
   useEffect(() => {
@@ -77,6 +80,15 @@ function QuizContent() {
       if (firstTopic) setTopic(firstTopic)
     }
   }, [loading, hasAccess])
+
+  // Apply the user's saved default quiz length once it loads, before they've touched the setup screen
+  const appliedDefaultLength = useRef(false)
+  useEffect(() => {
+    if (!appliedDefaultLength.current && !prefsLoading && phase === 'setup') {
+      appliedDefaultLength.current = true
+      setCount(prefs.defaultQuizLength as QuizCount)
+    }
+  }, [prefs.defaultQuizLength, prefsLoading, phase])
 
   const currentQ = questions[qIndex]
   const progress = ((qIndex) / questions.length) * 100
@@ -134,6 +146,10 @@ function QuizContent() {
     setAnswered(true)
     const correct = idx === currentQ.answer
     setAnswers(prev => [...prev, { questionId: currentQ.id, selected: idx, correct }])
+
+    if (!correct && prefs.autoStarMissed && user) {
+      starMissed({ clerkId: user.id, cardId: `quiz-${currentQ.id}`, topic: currentQ.topic })
+    }
   }
 
   function nextQuestion() {
@@ -500,20 +516,22 @@ function QuizContent() {
         {/* Explanation + Next */}
         {answered && (
           <div style={{ animation: 'fadeUp 0.2s ease-out' }}>
-            <div style={{
-              background: 'var(--color-warm-white)',
-              border: '1px solid rgba(0,0,0,0.08)',
-              borderRadius: 'var(--radius-md)',
-              padding: '16px 18px',
-              marginBottom: '16px',
-            }}>
-              <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-black-95)', margin: '0 0 6px' }}>
-                Explanation
-              </p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-warm-500)', lineHeight: 1.6, margin: 0 }}>
-                {currentQ.explanation}
-              </p>
-            </div>
+            {prefs.showExplanations && (
+              <div style={{
+                background: 'var(--color-warm-white)',
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 18px',
+                marginBottom: '16px',
+              }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-black-95)', margin: '0 0 6px' }}>
+                  Explanation
+                </p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-warm-500)', lineHeight: 1.6, margin: 0 }}>
+                  {currentQ.explanation}
+                </p>
+              </div>
+            )}
 
             <button
               className="fj-btn-primary"

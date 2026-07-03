@@ -8,6 +8,8 @@ export default defineSchema({
     email:                     v.string(),
     name:                      v.optional(v.string()),
     avatar:                    v.optional(v.string()),
+    school:                    v.optional(v.string()),
+    cohort:                    v.optional(v.string()),
     lifetimePassPurchasedAt:   v.optional(v.number()),
     createdAt:                 v.number(),
   }).index("by_clerk_id", ["clerkId"]),
@@ -91,6 +93,16 @@ export default defineSchema({
     role:      v.string(),
     createdAt: v.number(),
   }).index("by_email", ["email"]),
+
+  // ── Study preferences (Education Hub account settings) ───────────────────
+  studyPreferences: defineTable({
+    userId:            v.id("users"),
+    showExplanations:  v.boolean(),
+    dailyReminder:     v.boolean(),
+    autoStarMissed:    v.boolean(),
+    defaultQuizLength: v.optional(v.number()),
+    updatedAt:         v.number(),
+  }).index("by_user", ["userId"]),
 
   // ── Partner profiles ──────────────────────────────────────────────────────
   partnerProfiles: defineTable({

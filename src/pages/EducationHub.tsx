@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { SignedIn, SignedOut, useUser, SignInButton } from '@clerk/clerk-react'
 import { useQuery } from 'convex/react'
@@ -6,6 +6,7 @@ import { api } from '../../convex/_generated/api'
 import PageMeta from '../components/PageMeta'
 import GuestBanner from '../components/GuestBanner'
 import { useEduAccess } from '../hooks/useEduAccess'
+import { useStudyPreferences } from '../hooks/useStudyPreferences'
 
 const PASS_URL = import.meta.env.VITE_LIFETIME_PASS_URL as string | undefined
 
@@ -546,6 +547,22 @@ function SignedInHub() {
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function EducationHub() {
+  const { user } = useUser()
+  const { prefs } = useStudyPreferences()
+
+  // Daily reminder — local browser notification, once per calendar day, opt-in only
+  useEffect(() => {
+    if (!user || !prefs.dailyReminder) return
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+
+    const today = new Date().toISOString().slice(0, 10)
+    const lastKey = `fj-last-reminder-${user.id}`
+    if (localStorage.getItem(lastKey) === today) return
+
+    new Notification('Time to study!', { body: 'Keep your Texas barber exam prep streak going.' })
+    localStorage.setItem(lastKey, today)
+  }, [user, prefs.dailyReminder])
+
   return (
     <>
       <PageMeta

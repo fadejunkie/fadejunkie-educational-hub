@@ -1,33 +1,150 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { SignedIn, SignedOut, useUser, useClerk, SignInButton } from '@clerk/clerk-react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import { useStudyPreferences } from '../hooks/useStudyPreferences'
+import { QUIZ_COUNTS, type QuizCount } from '../data/studyData'
 
 type Section = 'profile' | 'study' | 'partner' | 'data'
 
-const STUDY_PREFS = [
-  { label: 'Default quiz length', value: '50 questions', isToggle: false },
-  { label: 'Show answer explanations', value: 'On', isToggle: true },
-  { label: 'Daily reminder', value: 'Off', isToggle: true },
-  { label: 'Auto-star missed questions', value: 'On', isToggle: true },
-]
+function toCsvValue(value: string | number): string {
+  const str = String(value)
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+}
 
-const DATA_ACTIONS = [
-  { label: 'Export study data', sub: 'Download CSV', danger: false },
-  { label: 'Reset progress', sub: 'Clear all answers', danger: false },
-  { label: 'Delete account', sub: 'Permanent', danger: true },
-]
+function downloadCsv(filename: string, rows: (string | number)[][]) {
+  const csv = rows.map(row => row.map(toCsvValue).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function AccountSettings() {
   const [active, setActive] = useState<Section>('profile')
   const { user } = useUser()
   const { signOut } = useClerk()
+  const navigate = useNavigate()
   const clerkId = user?.id ?? ''
 
   const partnerProfile = useQuery(api.partners.getMyPartnerProfile, clerkId ? { clerkId } : 'skip')
   const setPartnerVisibility = useMutation(api.partners.setPartnerVisibility)
   const [partnerSaving, setPartnerSaving] = useState(false)
+
+  const { prefs, loading: prefsLoading, setPreference, setDefaultQuizLength } = useStudyPreferences()
+  const [savingPref, setSavingPref] = useState<string | null>(null)
+  const [savingQuizLength, setSavingQuizLength] = useState(false)
+
+  // Profile fields (School / Cohort)
+  const myProfile = useQuery(api.userProfile.getMyProfile, clerkId ? { clerkId } : 'skip')
+  const updateProfileField = useMutation(api.userProfile.updateProfile)
+  const [editingField, setEditingField] = useState<'school' | 'cohort' | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [savingField, setSavingField] = useState(false)
+
+  function startEditing(field: 'school' | 'cohort', current: string) {
+    setEditingField(field)
+    setEditValue(current === 'Not set' ? '' : current)
+  }
+
+  async function saveField() {
+    if (!editingField || !clerkId) return
+    setSavingField(true)
+    try {
+      await updateProfileField({
+        clerkId,
+        email: user?.primaryEmailAddress?.emailAddress,
+        name: user?.fullName ?? undefined,
+        field: editingField,
+        value: editValue,
+      })
+      setEditingField(null)
+    } finally {
+      setSavingField(false)
+    }
+  }
+
+  async function changeQuizLength(value: QuizCount) {
+    if (savingQuizLength || value === prefs.defaultQuizLength) return
+    setSavingQuizLength(true)
+    try {
+      await setDefaultQuizLength(value)
+    } finally {
+      setSavingQuizLength(false)
+    }
+  }
+
+  // Data & privacy
+  const exportData = useQuery(api.progress.exportData, clerkId ? { clerkId } : 'skip')
+  const resetProgressMutation = useMutation(api.progress.resetProgress)
+  const [resetting, setResetting] = useState(false)
+  const [resetDone, setResetDone] = useState(false)
+
+  function handleExport() {
+    if (!exportData) return
+    const rows: (string | number)[][] = [['Quiz Sessions'], ['Date', 'Topic', 'Correct', 'Total', 'Accuracy']]
+    for (const s of exportData.sessions) {
+      const accuracy = s.total > 0 ? `${Math.round((s.correct / s.total) * 100)}%` : '0%'
+      rows.push([new Date(s.completedAt).toISOString().slice(0, 10), s.topic, s.correct, s.total, accuracy])
+    }
+    rows.push([])
+    rows.push(['Starred Cards'])
+    rows.push(['Topic', 'Card ID'])
+    for (const c of exportData.starredCards) {
+      rows.push([c.topic, c.cardId])
+    }
+    downloadCsv('fadejunkie-study-data.csv', rows)
+  }
+
+  async function handleReset() {
+    if (!clerkId || resetting) return
+    const confirmed = window.confirm('This will permanently clear all your quiz history and starred cards. This can\'t be undone. Continue?')
+    if (!confirmed) return
+    setResetting(true)
+    try {
+      await resetProgressMutation({ clerkId })
+      setResetDone(true)
+      setTimeout(() => setResetDone(false), 3000)
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  // Delete account
+  const deleteAccountMutation = useMutation(api.userProfile.deleteAccount)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDeleteAccount() {
+    if (!clerkId || deleting || deleteConfirmText !== 'DELETE') return
+    setDeleting(true)
+    try {
+      await deleteAccountMutation({ clerkId })
+      await signOut()
+      navigate('/')
+    } catch {
+      setDeleting(false)
+    }
+  }
+
+  async function togglePref(key: 'showExplanations' | 'dailyReminder' | 'autoStarMissed') {
+    if (savingPref) return
+    setSavingPref(key)
+    try {
+      const next = !prefs[key]
+      if (key === 'dailyReminder' && next && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+      await setPreference(key, next)
+    } finally {
+      setSavingPref(null)
+    }
+  }
 
   const isListed = partnerProfile?.isVisible ?? false
 
@@ -163,12 +280,10 @@ export default function AccountSettings() {
                     </div>
                   </div>
 
-                  {/* Fields */}
+                  {/* Read-only fields */}
                   {[
                     ['Display name', user?.firstName ?? 'Not set'],
                     ['Email', user?.primaryEmailAddress?.emailAddress ?? 'Not set'],
-                    ['School', 'Not set'],
-                    ['Cohort', 'Not set'],
                   ].map(([label, value]) => (
                     <div key={label} style={{
                       padding: '12px 0',
@@ -179,10 +294,67 @@ export default function AccountSettings() {
                       fontSize: '13px',
                     }}>
                       <span style={{ color: 'rgba(0,0,0,0.6)' }}>{label}</span>
-                      <span style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <span style={{ color: value === 'Not set' ? 'rgba(0,0,0,0.38)' : 'var(--color-black-95)' }}>{value}</span>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-blue)', cursor: 'pointer' }}>Edit</span>
-                      </span>
+                      <span style={{ color: value === 'Not set' ? 'rgba(0,0,0,0.38)' : 'var(--color-black-95)' }}>{value}</span>
+                    </div>
+                  ))}
+
+                  {/* Editable fields: School / Cohort */}
+                  {([
+                    ['school', 'School', myProfile?.school ?? 'Not set'],
+                    ['cohort', 'Cohort', myProfile?.cohort ?? 'Not set'],
+                  ] as ['school' | 'cohort', string, string][]).map(([field, label, value]) => (
+                    <div key={field} style={{
+                      padding: '12px 0',
+                      borderTop: 'var(--border-whisper)',
+                      fontSize: '13px',
+                    }}>
+                      {editingField === field ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: 'rgba(0,0,0,0.6)', flexShrink: 0 }}>{label}</span>
+                          <input
+                            autoFocus
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveField()
+                              if (e.key === 'Escape') setEditingField(null)
+                            }}
+                            placeholder={`Enter your ${label.toLowerCase()}`}
+                            style={{
+                              flex: 1, fontSize: '13px', padding: '5px 8px',
+                              border: '1px solid var(--color-blue)', borderRadius: '6px',
+                              outline: 'none',
+                            }}
+                          />
+                          <button
+                            onClick={saveField}
+                            disabled={savingField}
+                            style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-blue)', background: 'none', border: 'none', cursor: savingField ? 'wait' : 'pointer' }}
+                          >
+                            {savingField ? 'Saving…' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => setEditingField(null)}
+                            disabled={savingField}
+                            style={{ fontSize: '12px', color: 'rgba(0,0,0,0.5)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: 'rgba(0,0,0,0.6)' }}>{label}</span>
+                          <span style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <span style={{ color: value === 'Not set' ? 'rgba(0,0,0,0.38)' : 'var(--color-black-95)' }}>{value}</span>
+                            <span
+                              onClick={() => startEditing(field, value)}
+                              style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-blue)', cursor: 'pointer' }}
+                            >
+                              Edit
+                            </span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -200,34 +372,73 @@ export default function AccountSettings() {
                   <div style={{ padding: '20px 24px', borderBottom: 'var(--border-whisper)' }}>
                     <h2 style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--color-black-95)', margin: 0 }}>Study preferences</h2>
                   </div>
-                  {STUDY_PREFS.map((pref, i) => (
-                    <div key={pref.label} style={{
+
+                  {/* Default quiz length */}
+                  <div style={{
+                    padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    fontSize: '13px', flexWrap: 'wrap', gap: '10px',
+                  }}>
+                    <span style={{ color: 'var(--color-black-95)' }}>Default quiz length</span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {QUIZ_COUNTS.map(n => (
+                        <button
+                          key={n}
+                          onClick={() => changeQuizLength(n)}
+                          disabled={savingQuizLength || prefsLoading}
+                          style={{
+                            padding: '5px 10px', fontSize: '12px', fontWeight: 600,
+                            borderRadius: '9999px',
+                            border: prefs.defaultQuizLength === n ? '1px solid var(--color-blue)' : '1px solid rgba(0,0,0,0.12)',
+                            background: prefs.defaultQuizLength === n ? 'rgba(0,117,222,0.08)' : 'transparent',
+                            color: prefs.defaultQuizLength === n ? 'var(--color-blue)' : 'rgba(0,0,0,0.6)',
+                            cursor: savingQuizLength ? 'wait' : 'pointer',
+                            opacity: prefsLoading ? 0.5 : 1,
+                          }}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {([
+                    ['showExplanations', 'Show answer explanations', 'See why an answer is correct after each question.'],
+                    ['dailyReminder', 'Daily reminder', 'Get a browser notification if you haven’t studied yet today.'],
+                    ['autoStarMissed', 'Auto-star missed questions', 'Quiz questions you get wrong are saved to your starred list.'],
+                  ] as ['showExplanations' | 'dailyReminder' | 'autoStarMissed', string, string][]).map(([key, label, hint]) => (
+                    <div key={key} style={{
                       padding: '14px 24px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      borderTop: i === 0 ? 'none' : 'var(--border-whisper)',
+                      borderTop: 'var(--border-whisper)',
                       fontSize: '13px',
                     }}>
-                      <span style={{ color: 'var(--color-black-95)' }}>{pref.label}</span>
-                      <span style={{ display: 'flex', gap: '10px', alignItems: 'center', color: 'rgba(0,0,0,0.6)', fontSize: '12px' }}>
-                        {pref.value}
-                        {pref.isToggle && (
-                          <div style={{
-                            width: '34px', height: '18px',
-                            background: pref.value === 'On' ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
-                            borderRadius: '9999px', position: 'relative', cursor: 'pointer',
-                          }}>
-                            <div style={{
-                              position: 'absolute', top: '2px',
-                              [pref.value === 'On' ? 'right' : 'left']: '2px',
-                              width: '14px', height: '14px',
-                              background: '#fff', borderRadius: '9999px',
-                              transition: 'left 0.15s, right 0.15s',
-                            }} />
-                          </div>
-                        )}
+                      <span style={{ color: 'var(--color-black-95)' }}>
+                        {label}
+                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginTop: '2px', fontWeight: 400 }}>{hint}</div>
                       </span>
+                      <button
+                        onClick={() => togglePref(key)}
+                        disabled={prefsLoading || savingPref === key}
+                        aria-label={`Toggle ${label}`}
+                        style={{
+                          width: '34px', height: '18px', flexShrink: 0, padding: 0,
+                          background: prefs[key] ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
+                          borderRadius: '9999px', position: 'relative', border: 'none',
+                          cursor: savingPref === key ? 'wait' : 'pointer',
+                          opacity: prefsLoading ? 0.5 : 1,
+                          transition: 'background 0.15s',
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute', top: '2px',
+                          [prefs[key] ? 'right' : 'left']: '2px',
+                          width: '14px', height: '14px',
+                          background: '#fff', borderRadius: '9999px',
+                          transition: 'left 0.15s, right 0.15s',
+                        }} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -310,27 +521,121 @@ export default function AccountSettings() {
                   <div style={{ padding: '20px 24px', borderBottom: 'var(--border-whisper)' }}>
                     <h2 style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--color-black-95)', margin: 0 }}>Data & privacy</h2>
                   </div>
-                  {DATA_ACTIONS.map((action, i) => (
-                    <div key={action.label} style={{
+
+                  {/* Export study data */}
+                  <div
+                    onClick={handleExport}
+                    style={{
                       padding: '14px 24px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      borderTop: i === 0 ? 'none' : 'var(--border-whisper)',
-                      cursor: 'pointer',
+                      borderTop: 'none',
+                      cursor: exportData ? 'pointer' : 'wait',
+                      opacity: exportData ? 1 : 0.6,
                     }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-warm-white)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 500, color: action.danger ? '#c4492a' : 'var(--color-black-95)' }}>
-                          {action.label}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginTop: '2px' }}>{action.sub}</div>
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-warm-white)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-black-95)' }}>Export study data</div>
+                      <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginTop: '2px' }}>
+                        {exportData ? 'Download CSV' : 'Loading…'}
                       </div>
-                      <span style={{ color: 'rgba(0,0,0,0.38)', fontSize: '14px' }}>→</span>
                     </div>
-                  ))}
+                    <span style={{ color: 'rgba(0,0,0,0.38)', fontSize: '14px' }}>→</span>
+                  </div>
+
+                  {/* Reset progress */}
+                  <div
+                    onClick={handleReset}
+                    style={{
+                      padding: '14px 24px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      borderTop: 'var(--border-whisper)',
+                      cursor: resetting ? 'wait' : 'pointer',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-warm-white)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-black-95)' }}>Reset progress</div>
+                      <div style={{ fontSize: '11px', color: resetDone ? '#2e8b57' : 'rgba(0,0,0,0.38)', marginTop: '2px' }}>
+                        {resetting ? 'Clearing…' : resetDone ? 'Progress cleared' : 'Clear all answers'}
+                      </div>
+                    </div>
+                    <span style={{ color: 'rgba(0,0,0,0.38)', fontSize: '14px' }}>→</span>
+                  </div>
+
+                  {/* Delete account */}
+                  <div style={{ padding: '14px 24px', borderTop: 'var(--border-whisper)' }}>
+                    {!showDeleteConfirm ? (
+                      <div
+                        onClick={() => setShowDeleteConfirm(true)}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          margin: '-14px -24px',
+                          padding: '14px 24px',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-warm-white)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: '#c4492a' }}>Delete account</div>
+                          <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginTop: '2px' }}>Permanent</div>
+                        </div>
+                        <span style={{ color: 'rgba(0,0,0,0.38)', fontSize: '14px' }}>→</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 500, color: '#c4492a', marginBottom: '4px' }}>Delete account</div>
+                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.5)', marginBottom: '12px' }}>
+                          This permanently deletes your quiz history, starred cards, preferences, and partner listing. Your sign-in itself isn't affected — you can create a fresh account by signing in again. This can't be undone.
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.5)', marginBottom: '6px' }}>
+                          Type <strong>DELETE</strong> to confirm:
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            autoFocus
+                            value={deleteConfirmText}
+                            onChange={e => setDeleteConfirmText(e.target.value)}
+                            placeholder="DELETE"
+                            style={{
+                              flex: 1, fontSize: '13px', padding: '7px 10px',
+                              border: '1px solid rgba(196,73,42,0.4)', borderRadius: '6px',
+                              outline: 'none',
+                            }}
+                          />
+                          <button
+                            onClick={handleDeleteAccount}
+                            disabled={deleteConfirmText !== 'DELETE' || deleting}
+                            style={{
+                              padding: '7px 14px', fontSize: '12px', fontWeight: 600,
+                              borderRadius: '6px', border: 'none', color: '#fff',
+                              background: deleteConfirmText === 'DELETE' ? '#c4492a' : 'rgba(196,73,42,0.35)',
+                              cursor: deleteConfirmText === 'DELETE' && !deleting ? 'pointer' : 'not-allowed',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {deleting ? 'Deleting…' : 'Delete permanently'}
+                          </button>
+                          <button
+                            onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText('') }}
+                            disabled={deleting}
+                            style={{ fontSize: '12px', color: 'rgba(0,0,0,0.5)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
