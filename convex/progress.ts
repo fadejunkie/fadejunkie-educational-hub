@@ -1,9 +1,10 @@
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
+import { currentUser, upsertCurrentUser } from "./authz"
 
 export const saveQuizSession = mutation({
   args: {
-    clerkId:        v.string(),
+    clerkId:        v.optional(v.string()),
     email:          v.optional(v.string()),
     name:           v.optional(v.string()),
     topic:          v.string(),
@@ -16,21 +17,8 @@ export const saveQuizSession = mutation({
       total:   v.number(),
     })),
   },
-  handler: async (ctx, { clerkId, email, name, topic, count, correct, total, topicBreakdown }) => {
-    // Upsert user — create if this is their first quiz action
-    let user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", q => q.eq("clerkId", clerkId))
-      .first()
-    if (!user) {
-      const userId = await ctx.db.insert("users", {
-        clerkId,
-        email: email ?? "",
-        name:  name ?? undefined,
-        createdAt: Date.now(),
-      })
-      user = await ctx.db.get(userId)
-    }
+  handler: async (ctx, { topic, count, correct, total, topicBreakdown }) => {
+    const user = await upsertCurrentUser(ctx)
     if (!user) return
 
     await ctx.db.insert("quizSessions", {
@@ -46,12 +34,9 @@ export const saveQuizSession = mutation({
 })
 
 export const getUserProgress = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", q => q.eq("clerkId", clerkId))
-      .first()
+  args: { clerkId: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const user = await currentUser(ctx)
     if (!user) return null
 
     const sessions = await ctx.db
@@ -106,5 +91,50 @@ export const getUserProgress = query({
       lastSession,
       recentSessions,
     }
+  },
+})
+
+export const exportData = query({
+  args: { clerkId: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const user = await currentUser(ctx)
+    if (!user) return { sessions: [], starredCards: [] }
+
+    const sessions = await ctx.db
+      .query("quizSessions")
+      .withIndex("by_user", q => q.eq("userId", user._id))
+      .collect()
+
+    const starredCards = await ctx.db
+      .query("starredCards")
+      .withIndex("by_user", q => q.eq("userId", user._id))
+      .collect()
+
+    return {
+      sessions: sessions
+        .sort((a, b) => b.completedAt - a.completedAt)
+        .map(s => ({ completedAt: s.completedAt, topic: s.topic, correct: s.correct, total: s.total })),
+      starredCards: starredCards.map(c => ({ topic: c.topic, cardId: c.cardId })),
+    }
+  },
+})
+
+export const resetProgress = mutation({
+  args: { clerkId: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const user = await currentUser(ctx)
+    if (!user) return
+
+    const sessions = await ctx.db
+      .query("quizSessions")
+      .withIndex("by_user", q => q.eq("userId", user._id))
+      .collect()
+    for (const s of sessions) await ctx.db.delete(s._id)
+
+    const starredCards = await ctx.db
+      .query("starredCards")
+      .withIndex("by_user", q => q.eq("userId", user._id))
+      .collect()
+    for (const c of starredCards) await ctx.db.delete(c._id)
   },
 })

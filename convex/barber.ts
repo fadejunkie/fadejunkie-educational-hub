@@ -1,13 +1,14 @@
 import { mutation, query } from "./_generated/server"
 import { v } from "convex/values"
+import { currentUser, upsertCurrentUser } from "./authz"
 
 const TRIAL_DAYS = 7
 
 export const startTrial = mutation({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    const user = await ctx.db.query("users").withIndex("by_clerk_id", q => q.eq("clerkId", clerkId)).first()
-    if (!user) throw new Error("User not found")
+  args: { clerkId: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const user = await upsertCurrentUser(ctx)
+    if (!user) throw new Error("Unauthenticated")
 
     const existing = await ctx.db.query("userRoles")
       .withIndex("by_user_role", q => q.eq("userId", user._id).eq("role", "barber"))
@@ -31,9 +32,9 @@ export const startTrial = mutation({
 })
 
 export const getBarberRole = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    const user = await ctx.db.query("users").withIndex("by_clerk_id", q => q.eq("clerkId", clerkId)).first()
+  args: { clerkId: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const user = await currentUser(ctx)
     if (!user) return null
     return ctx.db.query("userRoles")
       .withIndex("by_user_role", q => q.eq("userId", user._id).eq("role", "barber"))
@@ -42,9 +43,9 @@ export const getBarberRole = query({
 })
 
 export const getBarberPage = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    const user = await ctx.db.query("users").withIndex("by_clerk_id", q => q.eq("clerkId", clerkId)).first()
+  args: { clerkId: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const user = await currentUser(ctx)
     if (!user) return null
     return ctx.db.query("barberPages").withIndex("by_user", q => q.eq("userId", user._id)).first()
   },

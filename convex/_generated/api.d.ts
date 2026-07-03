@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as authz from "../authz.js";
 import type * as barber from "../barber.js";
+import type * as debug from "../debug.js";
 import type * as eduAccess from "../eduAccess.js";
 import type * as partners from "../partners.js";
 import type * as progress from "../progress.js";
@@ -24,7 +26,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  authz: typeof authz;
   barber: typeof barber;
+  debug: typeof debug;
   eduAccess: typeof eduAccess;
   partners: typeof partners;
   progress: typeof progress;

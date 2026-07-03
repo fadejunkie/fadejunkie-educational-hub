@@ -1,17 +1,15 @@
 import { internalMutation, query } from "./_generated/server"
 import { v } from "convex/values"
+import { currentUser } from "./authz"
 
 /**
- * Returns whether the user has an active lifetime pass.
- * Used by all edu hub pages to gate content.
+ * Returns whether the signed-in user has an active lifetime pass.
+ * Identity comes from the verified token; the clerkId arg is ignored (F1).
  */
 export const getEduAccess = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", q => q.eq("clerkId", clerkId))
-      .first()
+  args: { clerkId: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const user = await currentUser(ctx)
     if (!user) return { hasAccess: false }
     return { hasAccess: !!user.lifetimePassPurchasedAt }
   },
