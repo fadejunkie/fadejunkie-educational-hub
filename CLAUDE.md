@@ -71,9 +71,14 @@ To unlock more sections, change `isLocked = idx >= 3` to a higher threshold (e.g
 
 ## Convex Backend
 
-- Deployment: `upbeat-pony-697`
-- Auth: Clerk + Convex auth
-- Tables: `progress` (quiz sessions), `starredCards`, `waitlist`, `partners`
+- Deployment: **`dashing-armadillo-621`** (production). This is what `.env.local`
+  (`CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL`) points at and what fadejunkie.com queries.
+  (The old `upbeat-pony-697` here was stale/wrong — always trust `.env.local`.)
+- No dev/prod split: `npx convex dev --once` deploys straight to production.
+- Auth: Clerk (`ConvexProviderWithClerk` after the P2 security cutover). See
+  `SECURITY_AUDIT.md` + `.paul/RUNBOOK.md`.
+- Tables: users, userRoles, barberPages, quizSessions, starredCards,
+  studyPreferences, partnerProfiles, waitlist
 
 ## Topic List (studyData.ts)
 
