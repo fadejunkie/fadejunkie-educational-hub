@@ -45,3 +45,23 @@ export async function upsertCurrentUser(ctx: MutationCtx): Promise<Doc<"users"> 
   })
   return await ctx.db.get(userId)
 }
+
+/**
+ * True if the signed-in caller has `isAdmin: true` on their user row.
+ * Never trust a client-supplied admin flag — this is the only path.
+ */
+export async function isAdmin(ctx: QueryCtx): Promise<boolean> {
+  const user = await currentUser(ctx)
+  return user?.isAdmin === true
+}
+
+/**
+ * Admin-gated user row, or throws. Use at the top of every admin.ts /
+ * devTickets.ts query and mutation — there is no other authorization check
+ * on those functions.
+ */
+export async function requireAdmin(ctx: QueryCtx): Promise<Doc<"users">> {
+  const user = await currentUser(ctx)
+  if (!user?.isAdmin) throw new Error("Not authorized")
+  return user
+}

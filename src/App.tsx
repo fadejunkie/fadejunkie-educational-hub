@@ -11,6 +11,7 @@ import Barber from './pages/Barber'
 import Profile from './pages/Profile'
 import AccountSettings from './pages/AccountSettings'
 import PracticalExamGuide from './pages/PracticalExamGuide'
+import Admin from './pages/Admin'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/barber" element={<Barber />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/account" element={<AccountSettings />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
       <Footer />

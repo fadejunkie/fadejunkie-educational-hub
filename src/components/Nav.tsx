@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { SignInButton, SignedIn, SignedOut, useUser, useClerk } from '@clerk/clerk-react'
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 
 const NAV_LINKS = [
   { label: 'Education Hub', href: '/education', sub: 'Study for the Texas board' },
@@ -14,6 +16,7 @@ export default function Nav() {
   const { user } = useUser()
   const { signOut } = useClerk()
   const menuRef = useRef<HTMLDivElement>(null)
+  const isAdmin = useQuery(api.admin.isCurrentUserAdmin)
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -145,6 +148,7 @@ export default function Nav() {
                     { label: 'Profile', href: '/profile' },
                     { label: 'Account Settings', href: '/account' },
                     { label: 'Starred cards', href: '/education/flash' },
+                    ...(isAdmin ? [{ label: 'Admin', href: '/admin' }] : []),
                   ] as const).map(item => (
                     <Link
                       key={item.label}
@@ -293,6 +297,12 @@ export default function Nav() {
                     <Link to="/profile" onClick={() => setOpen(false)} style={{ color: 'var(--color-blue)', textDecoration: 'none' }}>Profile</Link>
                     {' · '}
                     <Link to="/account" onClick={() => setOpen(false)} style={{ color: 'var(--color-blue)', textDecoration: 'none' }}>Account</Link>
+                    {isAdmin && (
+                      <>
+                        {' · '}
+                        <Link to="/admin" onClick={() => setOpen(false)} style={{ color: 'var(--color-blue)', textDecoration: 'none' }}>Admin</Link>
+                      </>
+                    )}
                     {' · '}
                     <button
                       onClick={() => { signOut(); setOpen(false) }}

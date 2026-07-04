@@ -11,6 +11,7 @@ export default defineSchema({
     school:                    v.optional(v.string()),
     cohort:                    v.optional(v.string()),
     lifetimePassPurchasedAt:   v.optional(v.number()),
+    isAdmin:                   v.optional(v.boolean()),
     createdAt:                 v.number(),
   }).index("by_clerk_id", ["clerkId"]),
 
@@ -120,4 +121,19 @@ export default defineSchema({
     .index("by_user",     ["userId"])
     .index("by_clerk_id", ["clerkId"])
     .index("by_visible",  ["isVisible"]),
+
+  // ── Dev tickets (admin → Claude inbox) ─────────────────────────────────────
+  devTickets: defineTable({
+    createdBy:   v.id("users"),
+    title:       v.string(),
+    description: v.string(),
+    category:    v.union(v.literal("bug"), v.literal("feature"), v.literal("content"), v.literal("other")),
+    priority:    v.union(v.literal("low"), v.literal("medium"), v.literal("high"), v.literal("critical")),
+    status:      v.union(v.literal("open"), v.literal("in_progress"), v.literal("done"), v.literal("wont_fix")),
+    route:       v.optional(v.string()),
+    createdAt:   v.number(),
+    updatedAt:   v.number(),
+  })
+    .index("by_status",     ["status"])
+    .index("by_created_at", ["createdAt"]),
 })
