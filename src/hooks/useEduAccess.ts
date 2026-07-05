@@ -12,7 +12,7 @@ export function useEduAccess() {
   const { user, isLoaded: clerkLoaded } = useUser()
   const result = useQuery(
     api.eduAccess.getEduAccess,
-    clerkLoaded && user ? { clerkId: user.id } : 'skip'
+    clerkLoaded && user ? {} : 'skip'
   )
 
   const loading = !clerkLoaded || (!!user && result === undefined)

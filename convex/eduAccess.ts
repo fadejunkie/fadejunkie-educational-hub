@@ -4,10 +4,10 @@ import { currentUser } from "./authz"
 
 /**
  * Returns whether the signed-in user has an active lifetime pass.
- * Identity comes from the verified token; the clerkId arg is ignored (F1).
+ * Identity comes from the verified token (F1).
  */
 export const getEduAccess = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return { hasAccess: false }

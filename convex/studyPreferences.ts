@@ -5,7 +5,7 @@ import { currentUser, upsertCurrentUser } from "./authz"
 const DEFAULTS = { showExplanations: true, dailyReminder: false, autoStarMissed: true, defaultQuizLength: 20 }
 
 export const getMyPreferences = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return DEFAULTS
@@ -24,7 +24,6 @@ export const getMyPreferences = query({
 
 export const setPreference = mutation({
   args: {
-    clerkId: v.optional(v.string()),
     email:   v.optional(v.string()),
     name:    v.optional(v.string()),
     key:     v.union(v.literal("showExplanations"), v.literal("dailyReminder"), v.literal("autoStarMissed")),
@@ -45,7 +44,6 @@ export const setPreference = mutation({
 
 export const setDefaultQuizLength = mutation({
   args: {
-    clerkId: v.optional(v.string()),
     email:   v.optional(v.string()),
     name:    v.optional(v.string()),
     value:   v.union(v.literal(20), v.literal(50), v.literal(100)),

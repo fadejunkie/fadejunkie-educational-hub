@@ -3,7 +3,7 @@ import { v } from "convex/values"
 import { currentUser, upsertCurrentUser } from "./authz"
 
 export const toggle = mutation({
-  args: { clerkId: v.optional(v.string()), cardId: v.string(), topic: v.string() },
+  args: { cardId: v.string(), topic: v.string() },
   handler: async (ctx, { cardId, topic }) => {
     const user = await upsertCurrentUser(ctx)
     if (!user) return { starred: false }
@@ -24,7 +24,7 @@ export const toggle = mutation({
 
 // Idempotent star — used by auto-star (never un-stars an existing card)
 export const star = mutation({
-  args: { clerkId: v.optional(v.string()), cardId: v.string(), topic: v.string() },
+  args: { cardId: v.string(), topic: v.string() },
   handler: async (ctx, { cardId, topic }) => {
     const user = await upsertCurrentUser(ctx)
     if (!user) return
@@ -39,7 +39,7 @@ export const star = mutation({
 })
 
 export const getStarred = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return []

@@ -11,9 +11,9 @@
 import type * as admin from "../admin.js";
 import type * as authz from "../authz.js";
 import type * as barber from "../barber.js";
-import type * as debug from "../debug.js";
 import type * as devTickets from "../devTickets.js";
 import type * as eduAccess from "../eduAccess.js";
+import type * as http from "../http.js";
 import type * as partners from "../partners.js";
 import type * as progress from "../progress.js";
 import type * as starredCards from "../starredCards.js";
@@ -31,9 +31,9 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   authz: typeof authz;
   barber: typeof barber;
-  debug: typeof debug;
   devTickets: typeof devTickets;
   eduAccess: typeof eduAccess;
+  http: typeof http;
   partners: typeof partners;
   progress: typeof progress;
   starredCards: typeof starredCards;

@@ -4,7 +4,6 @@ import { currentUser, upsertCurrentUser } from "./authz"
 
 export const saveQuizSession = mutation({
   args: {
-    clerkId:        v.optional(v.string()),
     email:          v.optional(v.string()),
     name:           v.optional(v.string()),
     topic:          v.string(),
@@ -34,7 +33,7 @@ export const saveQuizSession = mutation({
 })
 
 export const getUserProgress = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return null
@@ -95,7 +94,7 @@ export const getUserProgress = query({
 })
 
 export const exportData = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return { sessions: [], starredCards: [] }
@@ -120,7 +119,7 @@ export const exportData = query({
 })
 
 export const resetProgress = mutation({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return

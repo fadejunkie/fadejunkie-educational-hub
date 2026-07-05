@@ -17,7 +17,7 @@ function ProfileContent() {
   const { user } = useUser()
   const progress = useQuery(
     api.progress.getUserProgress,
-    user ? { clerkId: user.id } : 'skip'
+    user ? {} : 'skip'
   )
 
   const stats = [

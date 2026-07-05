@@ -14,7 +14,7 @@ export function useStudyPreferences() {
   const { user, isLoaded: clerkLoaded } = useUser()
   const result = useQuery(
     api.studyPreferences.getMyPreferences,
-    clerkLoaded && user ? { clerkId: user.id } : 'skip'
+    clerkLoaded && user ? {} : 'skip'
   )
   const setPreferenceMutation = useMutation(api.studyPreferences.setPreference)
   const setDefaultQuizLengthMutation = useMutation(api.studyPreferences.setDefaultQuizLength)
@@ -25,7 +25,6 @@ export function useStudyPreferences() {
   async function setPreference(key: PrefKey, value: boolean) {
     if (!user) return
     await setPreferenceMutation({
-      clerkId: user.id,
       email:   user.primaryEmailAddress?.emailAddress,
       name:    user.fullName ?? undefined,
       key,
@@ -36,7 +35,6 @@ export function useStudyPreferences() {
   async function setDefaultQuizLength(value: 20 | 50 | 100) {
     if (!user) return
     await setDefaultQuizLengthMutation({
-      clerkId: user.id,
       email:   user.primaryEmailAddress?.emailAddress,
       name:    user.fullName ?? undefined,
       value,

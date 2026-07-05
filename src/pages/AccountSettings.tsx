@@ -31,7 +31,7 @@ export default function AccountSettings() {
   const navigate = useNavigate()
   const clerkId = user?.id ?? ''
 
-  const partnerProfile = useQuery(api.partners.getMyPartnerProfile, clerkId ? { clerkId } : 'skip')
+  const partnerProfile = useQuery(api.partners.getMyPartnerProfile, clerkId ? {} : 'skip')
   const setPartnerVisibility = useMutation(api.partners.setPartnerVisibility)
   const [partnerSaving, setPartnerSaving] = useState(false)
 
@@ -40,7 +40,7 @@ export default function AccountSettings() {
   const [savingQuizLength, setSavingQuizLength] = useState(false)
 
   // Profile fields (School / Cohort)
-  const myProfile = useQuery(api.userProfile.getMyProfile, clerkId ? { clerkId } : 'skip')
+  const myProfile = useQuery(api.userProfile.getMyProfile, clerkId ? {} : 'skip')
   const updateProfileField = useMutation(api.userProfile.updateProfile)
   const [editingField, setEditingField] = useState<'school' | 'cohort' | null>(null)
   const [editValue, setEditValue] = useState('')
@@ -56,7 +56,6 @@ export default function AccountSettings() {
     setSavingField(true)
     try {
       await updateProfileField({
-        clerkId,
         email: user?.primaryEmailAddress?.emailAddress,
         name: user?.fullName ?? undefined,
         field: editingField,
@@ -79,7 +78,7 @@ export default function AccountSettings() {
   }
 
   // Data & privacy
-  const exportData = useQuery(api.progress.exportData, clerkId ? { clerkId } : 'skip')
+  const exportData = useQuery(api.progress.exportData, clerkId ? {} : 'skip')
   const resetProgressMutation = useMutation(api.progress.resetProgress)
   const [resetting, setResetting] = useState(false)
   const [resetDone, setResetDone] = useState(false)
@@ -106,7 +105,7 @@ export default function AccountSettings() {
     if (!confirmed) return
     setResetting(true)
     try {
-      await resetProgressMutation({ clerkId })
+      await resetProgressMutation({})
       setResetDone(true)
       setTimeout(() => setResetDone(false), 3000)
     } finally {
@@ -124,7 +123,7 @@ export default function AccountSettings() {
     if (!clerkId || deleting || deleteConfirmText !== 'DELETE') return
     setDeleting(true)
     try {
-      await deleteAccountMutation({ clerkId })
+      await deleteAccountMutation({})
       await signOut()
       navigate('/')
     } catch {
@@ -153,7 +152,6 @@ export default function AccountSettings() {
     setPartnerSaving(true)
     try {
       await setPartnerVisibility({
-        clerkId,
         isVisible: !isListed,
         name: user?.fullName ?? user?.firstName ?? 'FadeJunkie User',
         email: user?.primaryEmailAddress?.emailAddress,

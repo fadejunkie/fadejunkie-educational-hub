@@ -115,7 +115,6 @@ function QuizContent() {
     if (!user) return
     const bd = Object.entries(breakdown).map(([t, { correct, total }]) => ({ topic: t, correct, total }))
     saveSession({
-      clerkId:        user.id,
       email:          user.emailAddresses[0]?.emailAddress,
       name:           user.fullName ?? undefined,
       topic,
@@ -148,7 +147,7 @@ function QuizContent() {
     setAnswers(prev => [...prev, { questionId: currentQ.id, selected: idx, correct }])
 
     if (!correct && prefs.autoStarMissed && user) {
-      starMissed({ clerkId: user.id, cardId: `quiz-${currentQ.id}`, topic: currentQ.topic })
+      starMissed({ cardId: `quiz-${currentQ.id}`, topic: currentQ.topic })
     }
   }
 

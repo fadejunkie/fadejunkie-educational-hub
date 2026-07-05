@@ -1,11 +1,10 @@
 import { mutation, query } from "./_generated/server"
-import { v } from "convex/values"
 import { currentUser, upsertCurrentUser } from "./authz"
 
 const TRIAL_DAYS = 7
 
 export const startTrial = mutation({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await upsertCurrentUser(ctx)
     if (!user) throw new Error("Unauthenticated")
@@ -32,7 +31,7 @@ export const startTrial = mutation({
 })
 
 export const getBarberRole = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return null
@@ -43,7 +42,7 @@ export const getBarberRole = query({
 })
 
 export const getBarberPage = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return null

@@ -341,7 +341,7 @@ function SignedInHub() {
   const { hasAccess, loading: accessLoading } = useEduAccess()
   const progress = useQuery(
     api.progress.getUserProgress,
-    user ? { clerkId: user.id } : 'skip'
+    user ? {} : 'skip'
   )
 
   const firstName = user?.firstName ?? ''

@@ -167,7 +167,7 @@ export default function Barber() {
   const startTrial = useMutation(api.barber.startTrial)
   const barberRole = useQuery(
     api.barber.getBarberRole,
-    isSignedIn ? { clerkId: user!.id } : 'skip'
+    isSignedIn ? {} : 'skip'
   )
 
   async function handleWaitlist(e: React.FormEvent) {
@@ -182,7 +182,7 @@ export default function Barber() {
     if (!user) return
     setTrialStarting(true)
     try {
-      await startTrial({ clerkId: user.id })
+      await startTrial({})
       window.location.href = '/build'
     } finally {
       setTrialStarting(false)

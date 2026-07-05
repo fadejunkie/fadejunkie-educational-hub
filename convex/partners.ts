@@ -4,7 +4,7 @@ import { currentUser, upsertCurrentUser } from "./authz"
 
 // Get the current user's partner profile
 export const getMyPartnerProfile = query({
-  args: { clerkId: v.optional(v.string()) },
+  args: {},
   handler: async (ctx) => {
     const user = await currentUser(ctx)
     if (!user) return null
@@ -15,7 +15,6 @@ export const getMyPartnerProfile = query({
 // Toggle partner visibility on/off — creates a profile record if none exists
 export const setPartnerVisibility = mutation({
   args: {
-    clerkId:     v.optional(v.string()),
     isVisible:   v.boolean(),
     name:        v.string(),
     email:       v.optional(v.string()),

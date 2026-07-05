@@ -1,10 +1,7 @@
 // Authorization helpers — the single source of truth for "who is calling."
 //
 // Every function must derive the acting user from the VERIFIED Clerk token
-// (ctx.auth.getUserIdentity()), never from a client-supplied argument. The
-// `clerkId` args still present on some functions are vestigial and ignored;
-// they are kept only so the existing client keeps compiling during the
-// transition and will be removed in a follow-up cleanup.
+// (ctx.auth.getUserIdentity()), never from a client-supplied argument.
 //
 // identity.subject === the Clerk user id (the same value the client stored as
 // `clerkId`), so existing `by_clerk_id` lookups continue to resolve.
