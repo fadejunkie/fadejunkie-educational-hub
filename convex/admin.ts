@@ -156,3 +156,24 @@ export const promoteAdmin = internalMutation({
     return { success: true }
   },
 })
+
+/**
+ * Repair: re-point an existing user row at a new Clerk user id. Needed when
+ * Clerk issues a new internal user id for the same email (e.g. after a
+ * dev → production instance cutover) — by_clerk_id lookups silently stop
+ * matching the old row, so admin/access checks fail even though the row's
+ * isAdmin flag never changed. INTERNAL — not client-callable. Run via
+ * `npx convex run admin:relinkClerkId '{"email":"you@example.com","newClerkId":"user_..."}'`.
+ */
+export const relinkClerkId = internalMutation({
+  args: { email: v.string(), newClerkId: v.string() },
+  handler: async (ctx, { email, newClerkId }) => {
+    const user = await ctx.db
+      .query("users")
+      .filter(q => q.eq(q.field("email"), email))
+      .first()
+    if (!user) throw new Error(`No user found with email: ${email}`)
+    await ctx.db.patch(user._id, { clerkId: newClerkId })
+    return { success: true, userId: user._id }
+  },
+})
