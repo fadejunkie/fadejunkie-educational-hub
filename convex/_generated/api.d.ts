@@ -16,6 +16,7 @@ import type * as eduAccess from "../eduAccess.js";
 import type * as http from "../http.js";
 import type * as partners from "../partners.js";
 import type * as progress from "../progress.js";
+import type * as schoolDemos from "../schoolDemos.js";
 import type * as starredCards from "../starredCards.js";
 import type * as studyPreferences from "../studyPreferences.js";
 import type * as userProfile from "../userProfile.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   partners: typeof partners;
   progress: typeof progress;
+  schoolDemos: typeof schoolDemos;
   starredCards: typeof starredCards;
   studyPreferences: typeof studyPreferences;
   userProfile: typeof userProfile;

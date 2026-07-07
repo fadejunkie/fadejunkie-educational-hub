@@ -291,7 +291,12 @@ function PracticalExamCallout() {
 
 // ── Paywall upgrade section (signed-in, no pass) ──────────────────────────
 
-function UpgradeSection() {
+function UpgradeSection({ clerkId }: { clerkId?: string }) {
+  // Stripe's webhook fulfillment (convex/http.ts) reads client_reference_id off the
+  // completed Checkout Session to know which user to grant access to — a bare
+  // Payment Link URL has no way to carry that, so it must be appended per-visitor.
+  const checkoutUrl = PASS_URL && clerkId ? `${PASS_URL}?client_reference_id=${encodeURIComponent(clerkId)}` : undefined
+
   return (
     <section style={{ padding: '52px 24px 40px', background: 'var(--color-white)' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -303,8 +308,8 @@ function UpgradeSection() {
           One payment of $15 gets you permanent access to every study tool — flashcards, quizzes, practical guide, and progress tracking. No subscriptions, no expiry.
         </p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          {PASS_URL ? (
-            <a href={PASS_URL} className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>
+          {checkoutUrl ? (
+            <a href={checkoutUrl} className="fj-btn-primary" style={{ fontSize: '0.9375rem' }}>
               Get Lifetime Access · $15 →
             </a>
           ) : (
@@ -372,7 +377,7 @@ function SignedInHub() {
   if (!hasAccess) {
     return (
       <>
-        <UpgradeSection />
+        <UpgradeSection clerkId={user?.id} />
 
         {/* Demo preview — same content as guest, lets them play before buying */}
         <section style={{ padding: '24px 24px 40px', background: 'var(--color-warm-white)', borderTop: '1px solid rgba(0,0,0,0.06)' }} className="edu-mobile-section">

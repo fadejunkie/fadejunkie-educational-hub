@@ -190,11 +190,17 @@ export default function Nav() {
         {/* Mobile right — avatar + hamburger */}
         <div style={{ display: 'none', alignItems: 'center', gap: '10px' }} className="show-mobile">
           <SignedIn>
-            <div style={{
-              width: '26px', height: '26px', borderRadius: '9999px',
-              background: 'rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.12)',
-              overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <Link
+              to="/account"
+              onClick={() => setOpen(false)}
+              aria-label="Account settings"
+              style={{
+                width: '26px', height: '26px', borderRadius: '9999px',
+                background: 'rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.12)',
+                overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                textDecoration: 'none', flexShrink: 0,
+              }}
+            >
               {user?.imageUrl ? (
                 <img src={user.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
@@ -202,7 +208,7 @@ export default function Nav() {
                   {user?.firstName?.[0] ?? '?'}
                 </span>
               )}
-            </div>
+            </Link>
           </SignedIn>
 
           <button

@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server"
+import { internalMutation, mutation, query } from "./_generated/server"
 import { v } from "convex/values"
 import { currentUser, upsertCurrentUser } from "./authz"
 
@@ -58,5 +58,30 @@ export const setDefaultQuizLength = mutation({
     } else {
       await ctx.db.insert("studyPreferences", { userId: user._id, ...DEFAULTS, defaultQuizLength: value, updatedAt: Date.now() })
     }
+  },
+})
+
+/**
+ * One-off admin fix path — same pattern as admin:relinkClerkId. CLI `npx convex run`
+ * calls have no Clerk identity, so the identity-scoped mutations above no-op; this
+ * looks the user up by email instead.
+ * `npx convex run studyPreferences:adminSetDefaultQuizLength '{"email":"you@example.com","value":20}'`
+ */
+export const adminSetDefaultQuizLength = internalMutation({
+  args: {
+    email: v.string(),
+    value: v.union(v.literal(20), v.literal(50), v.literal(100)),
+  },
+  handler: async (ctx, { email, value }) => {
+    const user = await ctx.db.query("users").filter(q => q.eq(q.field("email"), email)).first()
+    if (!user) throw new Error(`No user found with email: ${email}`)
+
+    const existing = await ctx.db.query("studyPreferences").withIndex("by_user", q => q.eq("userId", user._id)).first()
+    if (existing) {
+      await ctx.db.patch(existing._id, { defaultQuizLength: value, updatedAt: Date.now() })
+    } else {
+      await ctx.db.insert("studyPreferences", { userId: user._id, ...DEFAULTS, defaultQuizLength: value, updatedAt: Date.now() })
+    }
+    return { success: true, userId: user._id }
   },
 })

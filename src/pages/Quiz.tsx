@@ -81,6 +81,14 @@ function QuizContent() {
     }
   }, [loading, hasAccess])
 
+  // Free users are capped at the 20-question quiz — enforce even if a stale
+  // preference (or the default-length effect below) set count higher.
+  useEffect(() => {
+    if (!loading && !hasAccess && count !== 20) {
+      setCount(20)
+    }
+  }, [loading, hasAccess, count])
+
   // Apply the user's saved default quiz length once it loads, before they've touched the setup screen
   const appliedDefaultLength = useRef(false)
   useEffect(() => {
@@ -146,7 +154,7 @@ function QuizContent() {
     const correct = idx === currentQ.answer
     setAnswers(prev => [...prev, { questionId: currentQ.id, selected: idx, correct }])
 
-    if (!correct && prefs.autoStarMissed && user) {
+    if (!correct && prefs.autoStarMissed && hasAccess && user) {
       starMissed({ cardId: `quiz-${currentQ.id}`, topic: currentQ.topic })
     }
   }
@@ -248,11 +256,13 @@ function QuizContent() {
                 const available = topic === 'All'
                   ? ALL_QUIZ_QUESTIONS.length
                   : ALL_QUIZ_QUESTIONS.filter(q => q.topic === topic).length
-                const disabled = n > available
+                const locked = !hasAccess && n !== 20
+                const disabled = n > available || locked
                 return (
                   <button
                     key={n}
                     onClick={() => !disabled && setCount(n)}
+                    disabled={disabled}
                     style={{
                       padding: '8px 20px',
                       borderRadius: 'var(--radius-md)',
@@ -273,6 +283,14 @@ function QuizContent() {
                 )
               })}
             </div>
+            {!hasAccess && (
+              <p style={{ fontSize: '12px', color: 'var(--color-warm-300)', margin: '10px 0 0' }}>
+                🔒 50 &amp; 100-question quizzes unlock with the{' '}
+                <Link to="/education" style={{ color: 'var(--color-blue)', textDecoration: 'none', fontWeight: 600 }}>
+                  $15 lifetime pass
+                </Link>.
+              </p>
+            )}
           </div>
 
           <button

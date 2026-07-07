@@ -20,13 +20,14 @@ export const getStats = query({
   handler: async (ctx) => {
     await requireAdmin(ctx)
 
-    const [users, quizSessions, waitlist, partnerProfiles, barberPages, tickets] = await Promise.all([
+    const [users, quizSessions, waitlist, partnerProfiles, barberPages, tickets, schoolDemos] = await Promise.all([
       ctx.db.query("users").collect(),
       ctx.db.query("quizSessions").collect(),
       ctx.db.query("waitlist").collect(),
       ctx.db.query("partnerProfiles").collect(),
       ctx.db.query("barberPages").collect(),
       ctx.db.query("devTickets").collect(),
+      ctx.db.query("schoolDemos").collect(),
     ])
 
     return {
@@ -39,6 +40,8 @@ export const getStats = query({
       barberPagesCount: barberPages.length,
       barberPagesLive: barberPages.filter(p => p.status === "live").length,
       openTicketsCount: tickets.filter(t => t.status === "open" || t.status === "in_progress").length,
+      schoolsInPipeline: schoolDemos.filter(s => s.status !== "closed_won" && s.status !== "closed_lost").length,
+      demosScheduled: schoolDemos.filter(s => s.status === "demo_scheduled").length,
     }
   },
 })

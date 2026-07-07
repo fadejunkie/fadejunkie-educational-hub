@@ -136,4 +136,30 @@ export default defineSchema({
   })
     .index("by_status",     ["status"])
     .index("by_created_at", ["createdAt"]),
+
+  // ── School demo pipeline (admin-only micro CRM) ──────────────────────────
+  schoolDemos: defineTable({
+    createdBy:     v.id("users"),
+    schoolName:    v.string(),
+    contactName:   v.optional(v.string()),
+    contactEmail:  v.optional(v.string()),
+    contactPhone:  v.optional(v.string()),
+    status:        v.union(
+      v.literal("not_contacted"),
+      v.literal("contacted"),
+      v.literal("demo_scheduled"),
+      v.literal("demo_completed"),
+      v.literal("closed_won"),
+      v.literal("closed_lost"),
+    ),
+    followUpBy:    v.optional(v.number()),
+    demoDate:      v.optional(v.number()),
+    notes:         v.optional(v.string()),
+    createdAt:     v.number(),
+    updatedAt:     v.number(),
+  })
+    .index("by_status",      ["status"])
+    .index("by_follow_up",   ["followUpBy"])
+    .index("by_demo_date",   ["demoDate"])
+    .index("by_created_at",  ["createdAt"]),
 })

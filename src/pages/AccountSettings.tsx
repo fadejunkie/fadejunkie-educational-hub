@@ -4,6 +4,7 @@ import { SignedIn, SignedOut, useUser, useClerk, SignInButton } from '@clerk/cle
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useStudyPreferences } from '../hooks/useStudyPreferences'
+import { useEduAccess } from '../hooks/useEduAccess'
 import { QUIZ_COUNTS, type QuizCount } from '../data/studyData'
 
 type Section = 'profile' | 'study' | 'partner' | 'data'
@@ -35,6 +36,7 @@ export default function AccountSettings() {
   const setPartnerVisibility = useMutation(api.partners.setPartnerVisibility)
   const [partnerSaving, setPartnerSaving] = useState(false)
 
+  const { hasAccess } = useEduAccess()
   const { prefs, loading: prefsLoading, setPreference, setDefaultQuizLength } = useStudyPreferences()
   const [savingPref, setSavingPref] = useState<string | null>(null)
   const [savingQuizLength, setSavingQuizLength] = useState(false)
@@ -68,7 +70,7 @@ export default function AccountSettings() {
   }
 
   async function changeQuizLength(value: QuizCount) {
-    if (savingQuizLength || value === prefs.defaultQuizLength) return
+    if (!hasAccess || savingQuizLength || value === prefs.defaultQuizLength) return
     setSavingQuizLength(true)
     try {
       await setDefaultQuizLength(value)
@@ -133,6 +135,7 @@ export default function AccountSettings() {
 
   async function togglePref(key: 'showExplanations' | 'dailyReminder' | 'autoStarMissed') {
     if (savingPref) return
+    if (key !== 'showExplanations' && !hasAccess) return
     setSavingPref(key)
     try {
       const next = !prefs[key]
@@ -376,26 +379,36 @@ export default function AccountSettings() {
                     padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     fontSize: '13px', flexWrap: 'wrap', gap: '10px',
                   }}>
-                    <span style={{ color: 'var(--color-black-95)' }}>Default quiz length</span>
+                    <span style={{ color: 'var(--color-black-95)' }}>
+                      Default quiz length
+                      {!hasAccess && (
+                        <span style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginLeft: '6px', fontWeight: 400 }}>
+                          🔒 $15 pass required
+                        </span>
+                      )}
+                    </span>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      {QUIZ_COUNTS.map(n => (
-                        <button
-                          key={n}
-                          onClick={() => changeQuizLength(n)}
-                          disabled={savingQuizLength || prefsLoading}
-                          style={{
-                            padding: '5px 10px', fontSize: '12px', fontWeight: 600,
-                            borderRadius: '9999px',
-                            border: prefs.defaultQuizLength === n ? '1px solid var(--color-blue)' : '1px solid rgba(0,0,0,0.12)',
-                            background: prefs.defaultQuizLength === n ? 'rgba(0,117,222,0.08)' : 'transparent',
-                            color: prefs.defaultQuizLength === n ? 'var(--color-blue)' : 'rgba(0,0,0,0.6)',
-                            cursor: savingQuizLength ? 'wait' : 'pointer',
-                            opacity: prefsLoading ? 0.5 : 1,
-                          }}
-                        >
-                          {n}
-                        </button>
-                      ))}
+                      {QUIZ_COUNTS.map(n => {
+                        const locked = !hasAccess
+                        return (
+                          <button
+                            key={n}
+                            onClick={() => changeQuizLength(n)}
+                            disabled={locked || savingQuizLength || prefsLoading}
+                            style={{
+                              padding: '5px 10px', fontSize: '12px', fontWeight: 600,
+                              borderRadius: '9999px',
+                              border: prefs.defaultQuizLength === n ? '1px solid var(--color-blue)' : '1px solid rgba(0,0,0,0.12)',
+                              background: prefs.defaultQuizLength === n ? 'rgba(0,117,222,0.08)' : 'transparent',
+                              color: prefs.defaultQuizLength === n ? 'var(--color-blue)' : 'rgba(0,0,0,0.6)',
+                              cursor: locked ? 'not-allowed' : savingQuizLength ? 'wait' : 'pointer',
+                              opacity: locked ? 0.45 : prefsLoading ? 0.5 : 1,
+                            }}
+                          >
+                            {n}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
 
@@ -403,7 +416,9 @@ export default function AccountSettings() {
                     ['showExplanations', 'Show answer explanations', 'See why an answer is correct after each question.'],
                     ['dailyReminder', 'Daily reminder', 'Get a browser notification if you haven’t studied yet today.'],
                     ['autoStarMissed', 'Auto-star missed questions', 'Quiz questions you get wrong are saved to your starred list.'],
-                  ] as ['showExplanations' | 'dailyReminder' | 'autoStarMissed', string, string][]).map(([key, label, hint]) => (
+                  ] as ['showExplanations' | 'dailyReminder' | 'autoStarMissed', string, string][]).map(([key, label, hint]) => {
+                    const locked = key !== 'showExplanations' && !hasAccess
+                    return (
                     <div key={key} style={{
                       padding: '14px 24px',
                       display: 'flex',
@@ -414,18 +429,23 @@ export default function AccountSettings() {
                     }}>
                       <span style={{ color: 'var(--color-black-95)' }}>
                         {label}
+                        {locked && (
+                          <span style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginLeft: '6px', fontWeight: 400 }}>
+                            🔒 $15 pass required
+                          </span>
+                        )}
                         <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginTop: '2px', fontWeight: 400 }}>{hint}</div>
                       </span>
                       <button
                         onClick={() => togglePref(key)}
-                        disabled={prefsLoading || savingPref === key}
+                        disabled={locked || prefsLoading || savingPref === key}
                         aria-label={`Toggle ${label}`}
                         style={{
                           width: '34px', height: '18px', flexShrink: 0, padding: 0,
                           background: prefs[key] ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
                           borderRadius: '9999px', position: 'relative', border: 'none',
-                          cursor: savingPref === key ? 'wait' : 'pointer',
-                          opacity: prefsLoading ? 0.5 : 1,
+                          cursor: locked ? 'not-allowed' : savingPref === key ? 'wait' : 'pointer',
+                          opacity: locked ? 0.45 : prefsLoading ? 0.5 : 1,
                           transition: 'background 0.15s',
                         }}
                       >
@@ -438,7 +458,8 @@ export default function AccountSettings() {
                         }} />
                       </button>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
 

@@ -4,11 +4,12 @@ import { SignedIn, SignedOut, useUser, SignInButton } from '@clerk/clerk-react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 
-type Section = 'overview' | 'users' | 'tickets' | 'partners' | 'barber' | 'waitlist'
+type Section = 'overview' | 'users' | 'demos' | 'tickets' | 'partners' | 'barber' | 'waitlist'
 
 const SECTIONS: [Section, string][] = [
   ['overview', 'Overview'],
   ['users', 'Users'],
+  ['demos', "DEMO's"],
   ['tickets', 'Dev Tickets'],
   ['partners', 'Partners'],
   ['barber', 'Barber Pages'],
@@ -55,6 +56,8 @@ function OverviewTab() {
     ['Partner profiles', `${stats.partnerProfilesVisible} visible / ${stats.partnerProfilesCount} total`],
     ['Barber pages', `${stats.barberPagesLive} live / ${stats.barberPagesCount} total`],
     ['Open dev tickets', stats.openTicketsCount],
+    ['Schools in pipeline', stats.schoolsInPipeline],
+    ['Demos scheduled', stats.demosScheduled],
   ]
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
@@ -131,6 +134,208 @@ function UsersTab() {
           )
         })
       )}
+    </div>
+  )
+}
+
+const DEMO_STATUSES = ['not_contacted', 'contacted', 'demo_scheduled', 'demo_completed', 'closed_won', 'closed_lost'] as const
+const DEMO_STATUS_LABEL: Record<typeof DEMO_STATUSES[number], string> = {
+  not_contacted: 'Not contacted',
+  contacted: 'Contacted',
+  demo_scheduled: 'Demo scheduled',
+  demo_completed: 'Demo completed',
+  closed_won: 'Closed won',
+  closed_lost: 'Closed lost',
+}
+const DEMO_STATUS_TONE: Record<typeof DEMO_STATUSES[number], 'neutral' | 'good' | 'warn' | 'bad'> = {
+  not_contacted: 'neutral',
+  contacted: 'warn',
+  demo_scheduled: 'good',
+  demo_completed: 'good',
+  closed_won: 'good',
+  closed_lost: 'bad',
+}
+
+function dateInputValue(ts?: number) {
+  return ts ? new Date(ts).toISOString().slice(0, 10) : ''
+}
+function dateFromInput(val: string): number | undefined {
+  return val ? new Date(`${val}T12:00:00`).getTime() : undefined
+}
+
+function DemosTab() {
+  const [statusFilter, setStatusFilter] = useState<typeof DEMO_STATUSES[number] | 'all'>('all')
+  const schools = useQuery(api.schoolDemos.listSchools, statusFilter === 'all' ? {} : { status: statusFilter })
+  const addSchool = useMutation(api.schoolDemos.addSchool)
+  const updateSchool = useMutation(api.schoolDemos.updateSchool)
+  const deleteSchool = useMutation(api.schoolDemos.deleteSchool)
+
+  const [showForm, setShowForm] = useState(false)
+  const [schoolName, setSchoolName] = useState('')
+  const [contactName, setContactName] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  const [status, setStatus] = useState<typeof DEMO_STATUSES[number]>('not_contacted')
+  const [followUpBy, setFollowUpBy] = useState('')
+  const [demoDate, setDemoDate] = useState('')
+  const [notes, setNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit() {
+    if (!schoolName.trim() || submitting) return
+    setSubmitting(true)
+    try {
+      await addSchool({
+        schoolName,
+        contactName: contactName || undefined,
+        contactEmail: contactEmail || undefined,
+        contactPhone: contactPhone || undefined,
+        status,
+        followUpBy: dateFromInput(followUpBy),
+        demoDate: dateFromInput(demoDate),
+        notes: notes || undefined,
+      })
+      setSchoolName('')
+      setContactName('')
+      setContactEmail('')
+      setContactPhone('')
+      setStatus('not_contacted')
+      setFollowUpBy('')
+      setDemoDate('')
+      setNotes('')
+      setShowForm(false)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const inputStyle: React.CSSProperties = { fontSize: '13px', padding: '9px 12px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '8px', outline: 'none' }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={card}>
+        <div style={{ ...cardHeader, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--color-black-95)' }}>School demo pipeline</h2>
+          <button onClick={() => setShowForm(s => !s)} className="fj-btn-primary" style={{ fontSize: '13px' }}>
+            {showForm ? 'Cancel' : '+ Add school'}
+          </button>
+        </div>
+        {showForm && (
+          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <input value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="School name" style={inputStyle} />
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <input value={contactName} onChange={e => setContactName(e.target.value)} placeholder="Contact name" style={{ ...inputStyle, flex: '1 1 160px' }} />
+              <input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="Contact email" style={{ ...inputStyle, flex: '1 1 160px' }} />
+              <input value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="Contact phone" style={{ ...inputStyle, flex: '1 1 140px' }} />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <select value={status} onChange={e => setStatus(e.target.value as typeof status)} style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)' }}>
+                {DEMO_STATUSES.map(s => <option key={s} value={s}>{DEMO_STATUS_LABEL[s]}</option>)}
+              </select>
+              <label style={{ fontSize: '11px', color: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                Follow up by
+                <input type="date" value={followUpBy} onChange={e => setFollowUpBy(e.target.value)} style={{ fontSize: '12px', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)' }} />
+              </label>
+              <label style={{ fontSize: '11px', color: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                Demo date
+                <input type="date" value={demoDate} onChange={e => setDemoDate(e.target.value)} style={{ fontSize: '12px', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)' }} />
+              </label>
+            </div>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Notes — how they were found, what was discussed, etc."
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={!schoolName.trim() || submitting}
+              className="fj-btn-primary"
+              style={{ fontSize: '13px', alignSelf: 'flex-end', opacity: !schoolName.trim() || submitting ? 0.6 : 1 }}
+            >
+              {submitting ? 'Adding…' : 'Add school'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        {(['all', ...DEMO_STATUSES] as const).map(s => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            style={{
+              padding: '5px 12px', fontSize: '12px', fontWeight: 500, borderRadius: '9999px',
+              border: '1px solid rgba(0,0,0,0.12)',
+              background: statusFilter === s ? 'var(--color-blue)' : 'var(--color-white)',
+              color: statusFilter === s ? '#fff' : 'rgba(0,0,0,0.6)', cursor: 'pointer',
+            }}
+          >
+            {s === 'all' ? 'all' : DEMO_STATUS_LABEL[s]}
+          </button>
+        ))}
+      </div>
+
+      <div style={card}>
+        {schools === undefined ? (
+          <div style={{ padding: '24px', fontSize: '13px', color: 'rgba(0,0,0,0.5)' }}>Loading…</div>
+        ) : schools.length === 0 ? (
+          <div style={{ padding: '24px', fontSize: '13px', color: 'rgba(0,0,0,0.5)' }}>No schools yet — add one above.</div>
+        ) : (
+          schools.map((s, i) => (
+            <div key={s._id} style={{ ...rowBase, borderTop: i === 0 ? 'none' : rowBase.borderTop }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: 'var(--color-black-95)' }}>{s.schoolName}</div>
+                  {(s.contactName || s.contactEmail || s.contactPhone) && (
+                    <div style={{ fontSize: '12px', color: 'rgba(0,0,0,0.55)', marginTop: '2px' }}>
+                      {[s.contactName, s.contactEmail, s.contactPhone].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                  {s.notes && (
+                    <div style={{ fontSize: '12px', color: 'rgba(0,0,0,0.55)', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{s.notes}</div>
+                  )}
+                  <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.38)', marginTop: '6px', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Pill label={DEMO_STATUS_LABEL[s.status]} tone={DEMO_STATUS_TONE[s.status]} />
+                    {s.followUpBy && <span>Follow up by {fmtDate(s.followUpBy)}</span>}
+                    {s.demoDate && <span>Demo {fmtDate(s.demoDate)}</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexShrink: 0, flexWrap: 'wrap' }}>
+                  <select
+                    value={s.status}
+                    onChange={e => updateSchool({ schoolId: s._id, status: e.target.value as typeof s.status })}
+                    style={{ fontSize: '12px', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)' }}
+                  >
+                    {DEMO_STATUSES.map(st => <option key={st} value={st}>{DEMO_STATUS_LABEL[st]}</option>)}
+                  </select>
+                  <input
+                    type="date"
+                    title="Follow up by"
+                    value={dateInputValue(s.followUpBy)}
+                    onChange={e => updateSchool({ schoolId: s._id, followUpBy: dateFromInput(e.target.value) ?? null })}
+                    style={{ fontSize: '12px', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)' }}
+                  />
+                  <input
+                    type="date"
+                    title="Demo date"
+                    value={dateInputValue(s.demoDate)}
+                    onChange={e => updateSchool({ schoolId: s._id, demoDate: dateFromInput(e.target.value) ?? null })}
+                    style={{ fontSize: '12px', padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)' }}
+                  />
+                  <button
+                    onClick={() => deleteSchool({ schoolId: s._id })}
+                    style={{ fontSize: '12px', color: 'rgba(0,0,0,0.38)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }
@@ -438,6 +643,7 @@ export default function Admin() {
 
                 {active === 'overview' && <OverviewTab />}
                 {active === 'users' && <UsersTab />}
+                {active === 'demos' && <DemosTab />}
                 {active === 'tickets' && <TicketsTab />}
                 {active === 'partners' && <PartnersTab />}
                 {active === 'barber' && <BarberTab />}
