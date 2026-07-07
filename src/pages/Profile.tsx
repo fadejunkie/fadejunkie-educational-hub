@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom'
 import { SignedIn, SignedOut, useUser, SignInButton } from '@clerk/clerk-react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import { useEduAccess } from '../hooks/useEduAccess'
+
+const PASS_URL = import.meta.env.VITE_LIFETIME_PASS_URL as string | undefined
 
 function elapsed(ms: number): string {
   const diff = Date.now() - ms
@@ -13,7 +16,45 @@ function elapsed(ms: number): string {
   return `${m}m ago`
 }
 
-function ProfileContent() {
+function LockedSection({ children }: { children: React.ReactNode }) {
+  const { user } = useUser()
+  const checkoutUrl = PASS_URL && user?.id
+    ? `${PASS_URL}?client_reference_id=${encodeURIComponent(user.id)}`
+    : undefined
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{ filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' }}>
+        {children}
+      </div>
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 8, padding: 24, textAlign: 'center',
+        background: 'rgba(255,255,255,0.6)', borderRadius: 10,
+      }}>
+        <div style={{ fontSize: 20 }}>🔒</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-black-95)' }}>
+          Unlock your full profile
+        </div>
+        <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.55)', maxWidth: 240, lineHeight: 1.4 }}>
+          See your real stats, activity, and topic mastery with lifetime access.
+        </div>
+        {checkoutUrl ? (
+          <a href={checkoutUrl} className="fj-btn-primary" style={{ fontSize: 12, padding: '7px 14px', textDecoration: 'none', marginTop: 4 }}>
+            Unlock — $15 lifetime
+          </a>
+        ) : (
+          <Link to="/education" className="fj-btn-primary" style={{ fontSize: 12, padding: '7px 14px', textDecoration: 'none', marginTop: 4 }}>
+            Unlock — $15 lifetime
+          </Link>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ProfileContent({ locked }: { locked: boolean }) {
   const { user } = useUser()
   const progress = useQuery(
     api.progress.getUserProgress,
@@ -102,23 +143,28 @@ function ProfileContent() {
 
             {/* Right — stats grid */}
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {stats.map(stat => (
-                  <div key={stat.label} style={{
-                    background: 'var(--color-warm-white)',
-                    border: 'var(--border-whisper)',
-                    borderRadius: '10px',
-                    padding: '14px 16px',
-                  }}>
-                    <div style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: 'var(--color-black-95)' }}>
-                      {stat.value}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.6)', marginTop: '2px' }}>
-                      {stat.label}
-                    </div>
+              {(() => {
+                const grid = (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {stats.map(stat => (
+                      <div key={stat.label} style={{
+                        background: 'var(--color-warm-white)',
+                        border: 'var(--border-whisper)',
+                        borderRadius: '10px',
+                        padding: '14px 16px',
+                      }}>
+                        <div style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px', color: 'var(--color-black-95)' }}>
+                          {stat.value}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.6)', marginTop: '2px' }}>
+                          {stat.label}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )
+                return locked ? <LockedSection>{grid}</LockedSection> : grid
+              })()}
             </div>
           </div>
         </div>
@@ -127,6 +173,8 @@ function ProfileContent() {
       {/* ── Recent activity ─────────────────────────────────────────────── */}
       <section style={{ padding: '32px 24px', background: 'var(--color-white)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          {(() => {
+            const activity = (
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
@@ -199,6 +247,9 @@ function ProfileContent() {
               )}
             </div>
           </div>
+            )
+            return locked ? <LockedSection>{activity}</LockedSection> : activity
+          })()}
         </div>
       </section>
     </>
@@ -220,8 +271,27 @@ export default function Profile() {
       </SignedOut>
 
       <SignedIn>
-        <ProfileContent />
+        <ProfileGate />
       </SignedIn>
     </>
   )
+}
+
+function ProfileGate() {
+  const { hasAccess, loading } = useEduAccess()
+
+  if (loading) {
+    return (
+      <section style={{ padding: '80px 24px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%',
+          border: '2px solid rgba(0,0,0,0.1)', borderTopColor: 'var(--color-blue)',
+          animation: 'spin 0.7s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </section>
+    )
+  }
+
+  return <ProfileContent locked={!hasAccess} />
 }
