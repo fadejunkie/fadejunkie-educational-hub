@@ -20,15 +20,28 @@ export const getEduAccess = query({
  * INTERNAL — not callable from any client. Run from the Convex dashboard,
  * via `npx convex run eduAccess:grantEduAccess`, or from the Stripe webhook
  * (see convex/http.ts / Phase 4). Never expose this to the browser.
+ *
+ * Creates the `users` row if it doesn't exist yet — a brand-new signup who
+ * goes straight to checkout has no row (upsertCurrentUser only runs from a
+ * handful of other mutations), and the webhook has no ctx.auth identity to
+ * fall back on since Stripe calls it directly.
  */
 export const grantEduAccess = internalMutation({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
+  args: { clerkId: v.string(), email: v.optional(v.string()) },
+  handler: async (ctx, { clerkId, email }) => {
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerk_id", q => q.eq("clerkId", clerkId))
       .first()
-    if (!user) throw new Error(`No user found with clerkId: ${clerkId}`)
+    if (!user) {
+      await ctx.db.insert("users", {
+        clerkId,
+        email: email ?? "",
+        createdAt: Date.now(),
+        lifetimePassPurchasedAt: Date.now(),
+      })
+      return { success: true, created: true }
+    }
     await ctx.db.patch(user._id, { lifetimePassPurchasedAt: Date.now() })
     return { success: true }
   },

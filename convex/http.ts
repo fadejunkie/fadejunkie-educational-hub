@@ -32,7 +32,8 @@ http.route({
         console.error("checkout.session.completed with no clerkId (client_reference_id/metadata)", session.id)
         return new Response("Missing clerkId", { status: 400 })
       }
-      await ctx.runMutation(internal.eduAccess.grantEduAccess, { clerkId })
+      const email = session.customer_details?.email ?? session.customer_email ?? undefined
+      await ctx.runMutation(internal.eduAccess.grantEduAccess, { clerkId, email })
     }
 
     return new Response(null, { status: 200 })
