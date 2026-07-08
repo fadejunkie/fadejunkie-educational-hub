@@ -52,6 +52,18 @@ export const TOPICS: Topic[] = [
   'Shaving',
 ]
 
+// Parses a `?topic=` URL param into specific topics. Accepts a single value
+// or a comma-joined list (as saved from a multi-topic quiz session). An
+// empty, missing, or 'All'/unrecognized-only param means "All" (empty array).
+export function parseTopicsParam(param: string | null): Exclude<Topic, 'All'>[] {
+  if (!param) return []
+  const valid = new Set(TOPICS.filter(t => t !== 'All'))
+  return param
+    .split(',')
+    .map(s => s.trim())
+    .filter((s): s is Exclude<Topic, 'All'> => valid.has(s as Exclude<Topic, 'All'>))
+}
+
 export const ALL_FLASH_CARDS: FlashCard[] = [
   {
     id: 1,

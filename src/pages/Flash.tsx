@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RotateCcw, Star } from 'lucide-react'
-import { ALL_FLASH_CARDS, TOPICS, type Topic } from '../data/studyData'
+import { ALL_FLASH_CARDS, TOPICS, parseTopicsParam, type Topic } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
 import { useEduAccess } from '../hooks/useEduAccess'
 
@@ -37,19 +37,20 @@ function ModeToggle({ mode }: { mode: 'flash' | 'quiz' }) {
 export default function Flash() {
   const { hasAccess, loading } = useEduAccess()
   const [searchParams] = useSearchParams()
-  const initialTopic = (searchParams.get('topic') as Topic) ?? 'All'
-  const [topic, setTopic] = useState<Topic>(initialTopic)
+  const initialTopics = parseTopicsParam(searchParams.get('topic'))
+  const [selectedTopics, setSelectedTopics] = useState<Exclude<Topic, 'All'>[]>(initialTopics)
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [starred, setStarred] = useState<Set<number>>(new Set())
   const [starredOnly, setStarredOnly] = useState(false)
 
-  // Once access resolves: if user can't use All, default to first specific topic
+  // Once access resolves: free users are locked to exactly one topic (no All, no multi-select)
   useEffect(() => {
-    if (!loading && !hasAccess && topic === 'All') {
-      const firstTopic = TOPICS.find(t => t !== 'All' && ALL_FLASH_CARDS.some(c => c.topic === t))
+    if (!loading && !hasAccess && selectedTopics.length !== 1) {
+      const firstTopic = selectedTopics[0]
+        ?? TOPICS.find(t => t !== 'All' && ALL_FLASH_CARDS.some(c => c.topic === t))
       if (firstTopic) {
-        setTopic(firstTopic)
+        setSelectedTopics([firstTopic])
         setIndex(0)
         setFlipped(false)
       }
@@ -57,10 +58,10 @@ export default function Flash() {
   }, [loading, hasAccess])
 
   const deck = useMemo(() => {
-    let cards = topic === 'All' ? ALL_FLASH_CARDS : ALL_FLASH_CARDS.filter(c => c.topic === topic)
+    let cards = selectedTopics.length === 0 ? ALL_FLASH_CARDS : ALL_FLASH_CARDS.filter(c => selectedTopics.includes(c.topic))
     if (starredOnly) cards = cards.filter(c => starred.has(c.id))
     return cards
-  }, [topic, starredOnly, starred])
+  }, [selectedTopics, starredOnly, starred])
 
   const card = deck[index] ?? null
   const total = deck.length
@@ -72,8 +73,14 @@ export default function Flash() {
     }, 150)
   }
 
-  function handleTopicChange(t: Topic) {
-    setTopic(t)
+  function toggleTopic(t: Topic) {
+    if (t === 'All') {
+      setSelectedTopics([])
+    } else if (!hasAccess) {
+      setSelectedTopics([t])
+    } else {
+      setSelectedTopics(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+    }
     setIndex(0)
     setFlipped(false)
   }
@@ -142,18 +149,19 @@ export default function Flash() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {availableTopics.map(t => {
               const isDisabled = !hasAccess && t === 'All'
+              const isActive = t === 'All' ? selectedTopics.length === 0 : selectedTopics.includes(t as Exclude<Topic, 'All'>)
               return (
                 <button
                   key={t}
-                  onClick={() => !isDisabled && handleTopicChange(t)}
+                  onClick={() => !isDisabled && toggleTopic(t)}
                   disabled={isDisabled}
                   style={{
                     padding: '7px 16px',
                     borderRadius: 'var(--radius-pill)',
                     border: '1px solid',
-                    borderColor: isDisabled ? 'rgba(0,0,0,0.07)' : topic === t ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
-                    background: isDisabled ? 'rgba(0,0,0,0.03)' : topic === t ? 'var(--color-blue)' : 'transparent',
-                    color: isDisabled ? 'rgba(0,0,0,0.25)' : topic === t ? 'var(--color-white)' : 'var(--color-warm-500)',
+                    borderColor: isDisabled ? 'rgba(0,0,0,0.07)' : isActive ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
+                    background: isDisabled ? 'rgba(0,0,0,0.03)' : isActive ? 'var(--color-blue)' : 'transparent',
+                    color: isDisabled ? 'rgba(0,0,0,0.25)' : isActive ? 'var(--color-white)' : 'var(--color-warm-500)',
                     fontSize: '0.9rem',
                     fontWeight: 500,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',

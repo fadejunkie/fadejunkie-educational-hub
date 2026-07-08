@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react'
 import { useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useUser } from '@clerk/clerk-react'
-import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, type Topic, type QuizCount } from '../data/studyData'
+import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, parseTopicsParam, type Topic, type QuizCount } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
 import { useEduAccess } from '../hooks/useEduAccess'
 import { useStudyPreferences } from '../hooks/useStudyPreferences'
@@ -58,9 +58,9 @@ function shuffle<T>(arr: T[]): T[] {
 function QuizContent() {
   const { hasAccess, loading } = useEduAccess()
   const [searchParams] = useSearchParams()
-  const initialTopic = (searchParams.get('topic') as Topic) ?? 'All'
+  const initialTopics = parseTopicsParam(searchParams.get('topic'))
   const [phase, setPhase] = useState<Phase>('setup')
-  const [topic, setTopic] = useState<Topic>(initialTopic)
+  const [selectedTopics, setSelectedTopics] = useState<Exclude<Topic, 'All'>[]>(initialTopics)
   const [count, setCount] = useState<QuizCount>(20)
   const [questions, setQuestions] = useState(ALL_QUIZ_QUESTIONS)
   const [qIndex, setQIndex] = useState(0)
@@ -73,11 +73,12 @@ function QuizContent() {
   const starMissed = useMutation(api.starredCards.star)
   const { prefs, loading: prefsLoading } = useStudyPreferences()
 
-  // Once access resolves: if user can't use All, default to first specific topic
+  // Once access resolves: free users are locked to exactly one topic (no All, no multi-select)
   useEffect(() => {
-    if (!loading && !hasAccess && topic === 'All') {
-      const firstTopic = TOPICS.find(t => t !== 'All' && ALL_QUIZ_QUESTIONS.some(q => q.topic === t))
-      if (firstTopic) setTopic(firstTopic)
+    if (!loading && !hasAccess && selectedTopics.length !== 1) {
+      const firstTopic = selectedTopics[0]
+        ?? TOPICS.find(t => t !== 'All' && ALL_QUIZ_QUESTIONS.some(q => q.topic === t))
+      if (firstTopic) setSelectedTopics([firstTopic])
     }
   }, [loading, hasAccess])
 
@@ -122,10 +123,11 @@ function QuizContent() {
     if (phase !== 'results') return
     if (!user) return
     const bd = Object.entries(breakdown).map(([t, { correct, total }]) => ({ topic: t, correct, total }))
+    const topicLabel = selectedTopics.length === 0 ? 'All' : selectedTopics.join(', ')
     saveSession({
       email:          user.emailAddresses[0]?.emailAddress,
       name:           user.fullName ?? undefined,
-      topic,
+      topic:          topicLabel,
       count,
       correct:        score,
       total:          questions.length,
@@ -134,10 +136,20 @@ function QuizContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
+  function toggleTopic(t: Topic) {
+    if (t === 'All') {
+      setSelectedTopics([])
+    } else if (!hasAccess) {
+      setSelectedTopics([t])
+    } else {
+      setSelectedTopics(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+    }
+  }
+
   function startQuiz() {
-    const pool = topic === 'All'
+    const pool = selectedTopics.length === 0
       ? ALL_QUIZ_QUESTIONS
-      : ALL_QUIZ_QUESTIONS.filter(q => q.topic === topic)
+      : ALL_QUIZ_QUESTIONS.filter(q => selectedTopics.includes(q.topic))
     const chosen = shuffle(pool).slice(0, Math.min(count, pool.length))
     setQuestions(chosen)
     setQIndex(0)
@@ -220,18 +232,19 @@ function QuizContent() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {TOPICS.filter(t => t === 'All' || ALL_QUIZ_QUESTIONS.some(q => q.topic === t)).map(t => {
                 const isDisabled = !hasAccess && t === 'All'
+                const isActive = t === 'All' ? selectedTopics.length === 0 : selectedTopics.includes(t as Exclude<Topic, 'All'>)
                 return (
                   <button
                     key={t}
-                    onClick={() => !isDisabled && setTopic(t)}
+                    onClick={() => !isDisabled && toggleTopic(t)}
                     disabled={isDisabled}
                     style={{
                       padding: '7px 16px',
                       borderRadius: 'var(--radius-pill)',
                       border: '1px solid',
-                      borderColor: isDisabled ? 'rgba(0,0,0,0.07)' : topic === t ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
-                      background: isDisabled ? 'rgba(0,0,0,0.03)' : topic === t ? 'var(--color-blue)' : 'transparent',
-                      color: isDisabled ? 'rgba(0,0,0,0.25)' : topic === t ? 'var(--color-white)' : 'var(--color-warm-500)',
+                      borderColor: isDisabled ? 'rgba(0,0,0,0.07)' : isActive ? 'var(--color-blue)' : 'rgba(0,0,0,0.12)',
+                      background: isDisabled ? 'rgba(0,0,0,0.03)' : isActive ? 'var(--color-blue)' : 'transparent',
+                      color: isDisabled ? 'rgba(0,0,0,0.25)' : isActive ? 'var(--color-white)' : 'var(--color-warm-500)',
                       fontSize: '0.9rem',
                       fontWeight: 500,
                       cursor: isDisabled ? 'not-allowed' : 'pointer',
@@ -253,9 +266,9 @@ function QuizContent() {
             </p>
             <div style={{ display: 'flex', gap: '8px' }}>
               {QUIZ_COUNTS.map(n => {
-                const available = topic === 'All'
+                const available = selectedTopics.length === 0
                   ? ALL_QUIZ_QUESTIONS.length
-                  : ALL_QUIZ_QUESTIONS.filter(q => q.topic === topic).length
+                  : ALL_QUIZ_QUESTIONS.filter(q => selectedTopics.includes(q.topic)).length
                 const locked = !hasAccess && n !== 20
                 const disabled = n > available || locked
                 return (
