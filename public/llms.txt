@@ -1,0 +1,26 @@
+# FadeJunkie Educational Hub
+
+> A free study tool for Texas barber students preparing for the state board exam — flashcards, quizzes, and live group study, built by FadeJunkie, a barber culture brand made by barbers.
+
+FadeJunkie Educational Hub is the first digital product from FadeJunkie. It's free, it always will be, and it's built for barber students studying between clients and classes — not a general cosmetology tool, not a full LMS, not a booking system.
+
+## Study Tools
+
+- [Education Hub](https://fadejunkie.com/education): Entry point to all study modes.
+- [Flashcards](https://fadejunkie.com/education/flash): 300 Texas state board questions across two decks, filterable by topic (Life Skills, History, Anatomy, Tools, Sanitation, and more). Star cards to build a personal weak-spot deck.
+- [Solo Quiz](https://fadejunkie.com/education/quiz): Timed multiple-choice quiz (20/50/100/150 questions), randomized from the full question bank or by topic, scored with a per-topic breakdown.
+- [Practical Exam Guide](https://fadejunkie.com/education/practical): Guidance for the hands-on portion of the Texas state board exam.
+
+## Barber Culture
+
+- [FadeJunkie](https://fadejunkie.com/): Homepage — who FadeJunkie is and what it's building.
+- [Barber Culture](https://fadejunkie.com/barber): Brand and culture content for working barbers.
+
+## Partners
+
+- [Partners](https://fadejunkie.com/partners): For barber schools and instructors looking for group study tools their students will actually use.
+
+## Notes
+
+- No account required to use flashcards or solo quiz. An account (Google sign-in) is only needed to save progress or join a live group quiz room.
+- Content is sourced from Milady published materials; Texas curriculum only, for now.

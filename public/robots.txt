@@ -1,0 +1,128 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+Disallow: /education/room
+Disallow: /growth
+Disallow: /unsubscribe
+
+# ─── AI answer engines / GEO (explicit allow — public content only) ───
+
+# OpenAI
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+
+# Anthropic
+User-agent: anthropic-ai
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+
+User-agent: claude-web
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /account
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# Google AI (separate from standard Googlebot)
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Google-CloudVertexBot
+Allow: /
+
+# Microsoft
+User-agent: Bingbot
+Allow: /
+
+# Apple
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Cohere
+User-agent: cohere-ai
+Allow: /
+
+# DuckDuckGo
+User-agent: DuckAssistBot
+Allow: /
+
+# ByteDance
+User-agent: Bytespider
+Allow: /
+
+# Meta
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+# Amazon
+User-agent: Amazonbot
+Allow: /
+
+# Allen Institute for AI
+User-agent: AI2Bot
+Allow: /
+
+User-agent: AI2Bot-Dolma
+Allow: /
+
+# xAI
+User-agent: xAI-Bot
+Allow: /
+
+# Huawei
+User-agent: PetalBot
+Allow: /
+
+# You.com
+User-agent: YouBot
+Allow: /
+
+# Common Crawl (feeds many LLM training sets)
+User-agent: CCBot
+Allow: /

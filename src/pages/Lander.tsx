@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import PageMeta from '../components/PageMeta'
 
 const TOOLS = [
   {
@@ -46,6 +47,20 @@ export default function Lander() {
           .lander-tool-cards { display: grid !important; }
         }
       `}</style>
+
+      <PageMeta
+        title="FadeJunkie — Free Texas Barber State Board Study Tool"
+        description="Flashcards, timed practice quizzes, and live group study for the Texas barber state board exam. 300+ questions from the Milady curriculum. Built by barbers, free forever."
+        canonical="https://fadejunkie.com/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'FadeJunkie',
+          url: 'https://fadejunkie.com/',
+          description:
+            'Free study tool for Texas barber students preparing for the state board exam — flashcards, quizzes, and live group study.',
+        }}
+      />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section style={{ padding: '48px 24px 40px', background: 'var(--color-warm-white)' }}>
