@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageMeta from '../components/PageMeta'
+import { routeMeta } from '../data/routeMeta.mjs'
 import PaywallGate from '../components/PaywallGate'
 import { useEduAccess } from '../hooks/useEduAccess'
 
@@ -670,11 +671,7 @@ export default function PracticalExamGuide() {
   return (
     <PaywallGate>
     <div style={{ background: 'var(--color-white)', minHeight: '100vh' }}>
-      <PageMeta
-        title="TDLR Barber Practical Exam Guide — FadeJunkie"
-        description="Complete Texas barber practical exam guide — materials checklist and step-by-step instructions for every section. Powered by FadeJunkie."
-        canonical="https://fadejunkie.com/education/practical"
-      />
+      <PageMeta {...routeMeta['/education/practical']} />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <section style={{ padding: '52px 24px 36px', background: 'var(--color-warm-white)', borderBottom: '1px solid rgba(0,0,0,0.07)' }}>

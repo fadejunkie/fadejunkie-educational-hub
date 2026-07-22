@@ -7,6 +7,8 @@ import {
   CheckCircle, ArrowRight, Zap, ClipboardList, Eye, Rocket,
   AlertCircle, Star, Lock,
 } from 'lucide-react'
+import PageMeta from '../components/PageMeta'
+import { routeMeta } from '../data/routeMeta.mjs'
 
 // ── What's included ────────────────────────────────────────────────────────
 const INCLUDES = [
@@ -195,6 +197,7 @@ export default function Barber() {
 
   return (
     <>
+      <PageMeta {...routeMeta['/barber']} />
       {/* ── Hero — auth-aware ─────────────────────────────────────────── */}
       {isSignedIn && barberRole?.status === 'trial' ? (
         // Active trial — nudge them to build/manage

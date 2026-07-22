@@ -4,6 +4,7 @@ import { SignedIn, SignedOut, useUser, SignInButton } from '@clerk/clerk-react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import PageMeta from '../components/PageMeta'
+import { routeMeta } from '../data/routeMeta.mjs'
 import GuestBanner from '../components/GuestBanner'
 import { useEduAccess } from '../hooks/useEduAccess'
 import { useStudyPreferences } from '../hooks/useStudyPreferences'
@@ -570,23 +571,7 @@ export default function EducationHub() {
 
   return (
     <>
-      <PageMeta
-        title="Texas Barber Exam Study Hub — FadeJunkie"
-        description="Flashcards, solo practice quizzes, and live group study for Texas barber state board prep. 300+ questions from the Milady curriculum. Free."
-        canonical="https://fadejunkie.com/education"
-        jsonLd={{
-          '@context': 'https://schema.org',
-          '@type': 'LearningResource',
-          name: 'Texas Barber State Board Exam Study Hub',
-          description: 'Free interactive study tool covering all Texas barber state board exam topics: anatomy, sanitation, tools, life skills, and more.',
-          url: 'https://fadejunkie.com/education',
-          provider: { '@type': 'Organization', name: 'FadeJunkie', url: 'https://fadejunkie.com' },
-          educationalLevel: 'Vocational',
-          teaches: 'Texas Barber State Board Exam',
-          isAccessibleForFree: false,
-          inLanguage: 'en',
-        }}
-      />
+      <PageMeta {...routeMeta['/education']} />
       {/* ── Guest experience ──────────────────────────────────────────────── */}
       <SignedOut>
         {/* Animated ticker banner */}

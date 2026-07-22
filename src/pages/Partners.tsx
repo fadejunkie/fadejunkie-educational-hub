@@ -2,6 +2,8 @@ import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { Link } from 'react-router-dom'
 import { SignedIn } from '@clerk/clerk-react'
+import PageMeta from '../components/PageMeta'
+import { routeMeta } from '../data/routeMeta.mjs'
 
 // ── Partner card ───────────────────────────────────────────────────────────
 
@@ -116,6 +118,8 @@ export default function Partners() {
   const partners = useQuery(api.partners.listPartners)
 
   return (
+    <>
+    <PageMeta {...routeMeta['/partners']} />
     <section style={{ padding: '72px 24px 96px' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
 
@@ -185,5 +189,6 @@ export default function Partners() {
 
       </div>
     </section>
+    </>
   )
 }

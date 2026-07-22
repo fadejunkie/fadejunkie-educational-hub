@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { RotateCcw, Star } from 'lucide-react'
 import { ALL_FLASH_CARDS, TOPICS, parseTopicsParam, type Topic } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
+import PageMeta from '../components/PageMeta'
+import { routeMeta } from '../data/routeMeta.mjs'
 import { useEduAccess } from '../hooks/useEduAccess'
 
 // Mode toggle shared between Flashcards and Quiz pages
@@ -103,6 +105,8 @@ export default function Flash() {
   const availableTopics = TOPICS.filter(t => t === 'All' || ALL_FLASH_CARDS.some(c => c.topic === t))
 
   return (
+    <>
+    <PageMeta {...routeMeta['/education/flash']} />
     <PaywallGate>
     <section style={{ padding: '0 0 80px', minHeight: 'calc(100vh - 60px)' }}>
 
@@ -313,5 +317,6 @@ export default function Flash() {
       </div>
     </section>
     </PaywallGate>
+    </>
   )
 }

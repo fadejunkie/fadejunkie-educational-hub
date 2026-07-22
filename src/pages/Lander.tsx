@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import PageMeta from '../components/PageMeta'
+import { routeMeta } from '../data/routeMeta.mjs'
 
 const TOOLS = [
   {
@@ -48,33 +49,7 @@ export default function Lander() {
         }
       `}</style>
 
-      <PageMeta
-        title="FadeJunkie — Free Texas Barber State Board Study Tool"
-        description="Flashcards, timed practice quizzes, and live group study for the Texas barber state board exam. 300+ questions from the Milady curriculum. Built by barbers, free forever."
-        canonical="https://fadejunkie.com/"
-        jsonLd={{
-          '@context': 'https://schema.org',
-          '@graph': [
-            {
-              '@type': 'WebSite',
-              name: 'FadeJunkie',
-              url: 'https://fadejunkie.com/',
-              description:
-                'Free study tool for Texas barber students preparing for the state board exam — flashcards, quizzes, and live group study.',
-            },
-            {
-              '@type': 'Organization',
-              name: 'FadeJunkie',
-              url: 'https://fadejunkie.com/',
-              logo: 'https://fadejunkie.com/fj-logo-color.png',
-              sameAs: [
-                'https://www.instagram.com/fadejunkie',
-                'https://www.tiktok.com/@fadejunkieofficial',
-              ],
-            },
-          ],
-        }}
-      />
+      <PageMeta {...routeMeta['/']} />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section style={{ padding: '48px 24px 40px', background: 'var(--color-warm-white)' }}>

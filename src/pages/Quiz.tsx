@@ -6,6 +6,8 @@ import { api } from '../../convex/_generated/api'
 import { useUser } from '@clerk/clerk-react'
 import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, parseTopicsParam, type Topic, type QuizCount } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
+import PageMeta from '../components/PageMeta'
+import { routeMeta } from '../data/routeMeta.mjs'
 import { useEduAccess } from '../hooks/useEduAccess'
 import { useStudyPreferences } from '../hooks/useStudyPreferences'
 
@@ -586,8 +588,11 @@ function QuizContent() {
 
 export default function Quiz() {
   return (
-    <PaywallGate>
-      <QuizContent />
-    </PaywallGate>
+    <>
+      <PageMeta {...routeMeta['/education/quiz']} />
+      <PaywallGate>
+        <QuizContent />
+      </PaywallGate>
+    </>
   )
 }
