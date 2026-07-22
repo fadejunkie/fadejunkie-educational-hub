@@ -54,11 +54,25 @@ export default function Lander() {
         canonical="https://fadejunkie.com/"
         jsonLd={{
           '@context': 'https://schema.org',
-          '@type': 'WebSite',
-          name: 'FadeJunkie',
-          url: 'https://fadejunkie.com/',
-          description:
-            'Free study tool for Texas barber students preparing for the state board exam — flashcards, quizzes, and live group study.',
+          '@graph': [
+            {
+              '@type': 'WebSite',
+              name: 'FadeJunkie',
+              url: 'https://fadejunkie.com/',
+              description:
+                'Free study tool for Texas barber students preparing for the state board exam — flashcards, quizzes, and live group study.',
+            },
+            {
+              '@type': 'Organization',
+              name: 'FadeJunkie',
+              url: 'https://fadejunkie.com/',
+              logo: 'https://fadejunkie.com/fj-logo-color.png',
+              sameAs: [
+                'https://www.instagram.com/fadejunkie',
+                'https://www.tiktok.com/@fadejunkieofficial',
+              ],
+            },
+          ],
         }}
       />
 
