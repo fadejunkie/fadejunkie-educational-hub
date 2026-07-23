@@ -37,6 +37,16 @@ function renderShell(meta) {
     html = html.replace('</title>', `</title>\n    <link rel="canonical" href="${meta.canonical}" />`)
   }
 
+  if (/<meta property="og:title"[^>]*>/.test(html)) {
+    html = html.replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${escapeHtml(meta.title)}" />`)
+  }
+  if (/<meta property="og:description"[^>]*>/.test(html)) {
+    html = html.replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${escapeHtml(meta.description)}" />`)
+  }
+  if (/<meta property="og:url"[^>]*>/.test(html)) {
+    html = html.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${meta.canonical}" />`)
+  }
+
   // Replace any existing static JSON-LD block (e.g. the homepage's), else insert a fresh one before </head>
   const jsonLdTag = meta.jsonLd
     ? `<script type="application/ld+json">${JSON.stringify(meta.jsonLd)}</script>`
