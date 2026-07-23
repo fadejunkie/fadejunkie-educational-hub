@@ -63,30 +63,39 @@ export const routeMeta = {
   },
 
   '/education': {
-    title: 'Texas Barber Exam Study Hub — FadeJunkie',
+    title: 'Texas Barber State Board Exam Study Hub — FadeJunkie',
     description:
-      'Flashcards, solo practice quizzes, and live group study for Texas barber state board prep. 300+ questions from the Milady curriculum. Free.',
+      'Free interactive study tool covering all Texas barber state board exam topics: anatomy, sanitation, tools, life skills, and more.',
     canonical: 'https://fadejunkie.com/education',
     jsonLd: {
       '@context': 'https://schema.org',
-      '@type': 'LearningResource',
-      name: 'Texas Barber State Board Exam Study Hub',
-      description:
-        'Free interactive study tool covering all Texas barber state board exam topics: anatomy, sanitation, tools, life skills, and more.',
-      url: 'https://fadejunkie.com/education',
-      provider: { '@type': 'Organization', name: 'FadeJunkie', url: 'https://fadejunkie.com' },
-      educationalLevel: 'Vocational',
-      teaches: 'Texas Barber State Board Exam',
-      isAccessibleForFree: false,
-      inLanguage: 'en',
-      dateModified: '2026-07-23',
+      '@graph': [
+        {
+          '@type': 'LearningResource',
+          name: 'Texas Barber State Board Exam Study Hub',
+          description:
+            'Free interactive study tool covering all Texas barber state board exam topics: anatomy, sanitation, tools, life skills, and more.',
+          url: 'https://fadejunkie.com/education',
+          provider: { '@type': 'Organization', name: 'FadeJunkie', url: 'https://fadejunkie.com' },
+          educationalLevel: 'Vocational',
+          teaches: 'Texas Barber State Board Exam',
+          // Guest visitors see real demo content on this page with no account at all
+          // (EducationHub.tsx's guest-view branch) — a free account is only required
+          // to actually start studying flashcards/quiz/practical guide, not to view
+          // this landing page. Matches PaywallGate.tsx (gates on sign-in, not payment).
+          isAccessibleForFree: true,
+          inLanguage: 'en',
+          dateModified: '2026-07-23',
+        },
+        ORG_JSONLD,
+      ],
     },
     staticContent: `
 <h1>Texas Barber State Board Exam Study Hub</h1>
 <p>Free interactive study tool covering every Texas barber state board exam topic: anatomy, sanitation, tools, life skills, and more — 300+ questions sourced from the Milady curriculum.</p>
 <h2>Sample question</h2>
 <p><strong>Q:</strong> Most effective way to sanitize metal implements between clients?<br><strong>A:</strong> An EPA-registered hospital disinfectant, minimum 10 minutes contact.</p>
-<p>Create a free account to start studying flashcards, the practice quiz, and the practical exam guide. A one-time $15 lifetime pass unlocks full multi-topic study and the complete question bank.</p>`,
+<p>Create a free account to start studying flashcards, the practice quiz, and the practical exam guide. A one-time $15 lifetime pass unlocks full multi-topic study and the complete question bank. See also: the <a href="/guide/texas-barber-state-board-exam">Texas barber state board exam guide</a> and the <a href="/guide/texas-barber-license-renewal">license renewal &amp; continuing education guide</a>.</p>`,
   },
 
   '/education/flash': {
@@ -294,7 +303,7 @@ export const routeMeta = {
 </ul>
 
 <h2>How FadeJunkie helps</h2>
-<p>300+ practice questions from the Milady curriculum across all 13 tested topics — <a href="/education/flash">flashcards</a>, a <a href="/education/quiz">timed practice quiz</a>, and the practical exam guide above. Free account required; a one-time $15 lifetime pass unlocks full multi-topic study and the complete question bank.</p>
+<p>300+ practice questions from the Milady curriculum across all 13 tested topics — <a href="/education/flash">flashcards</a>, a <a href="/education/quiz">timed practice quiz</a>, and the practical exam guide above. Free account required; a one-time $15 lifetime pass unlocks full multi-topic study and the complete question bank. Already licensed? See the <a href="/guide/texas-barber-license-renewal">license renewal &amp; continuing education guide</a> for what happens after you pass.</p>
 
 <h2>FAQ</h2>
 <p><strong>How many hours do I need before I can take the written exam?</strong><br>900 of the required 1,000 hours.</p>
@@ -307,6 +316,103 @@ export const routeMeta = {
 <li><a href="https://www.tdlr.texas.gov/barbering-and-cosmetology/individuals/examinations/" rel="noopener">TDLR — Exam Information for Barbers and Cosmetologists</a></li>
 <li><a href="https://www.tdlr.texas.gov/barbering-and-cosmetology/individuals/apply-barber.htm" rel="noopener">TDLR — Apply for a Class A Barber License</a></li>
 <li><a href="https://www.psiexams.com/test-takers/tdlr/" rel="noopener">PSI — TDLR Certification Exams</a></li>
+</ul>`,
+  },
+
+  '/guide/texas-barber-license-renewal': {
+    title: 'Texas Barber License Renewal & Continuing Education — FadeJunkie',
+    description:
+      'How Texas Class A Barber license renewal and continuing education actually works — hours required, mandatory topics, the 15-year exemption, and how often you renew.',
+    canonical: 'https://fadejunkie.com/guide/texas-barber-license-renewal',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'Article',
+          headline: 'Texas Barber License Renewal & Continuing Education, Explained',
+          description:
+            'How Texas Class A Barber license renewal and continuing education actually works — hours required, mandatory topics, the 15-year exemption, and how often you renew.',
+          url: 'https://fadejunkie.com/guide/texas-barber-license-renewal',
+          datePublished: '2026-07-23',
+          dateModified: '2026-07-23',
+          author: { '@type': 'Organization', name: 'FadeJunkie', url: 'https://fadejunkie.com/' },
+          publisher: ORG_JSONLD,
+          isPartOf: { '@type': 'WebSite', name: 'FadeJunkie', url: 'https://fadejunkie.com/' },
+          about: 'Texas Class A Barber License Renewal and Continuing Education',
+        },
+        {
+          '@type': 'FAQPage',
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: 'How often do I need to renew my Texas barber license?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Every two years. A Class A Barber license is valid for two years from the date of issue, and continuing education is required each renewal cycle.',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'How many continuing education hours do I need to renew?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: '4 hours every 2 years: 1 hour of sanitation, 1 hour of human trafficking awareness, and 2 hours of electives (sanitation, state laws and rules, mental health awareness, or other TDLR-approved topics).',
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'Is there an exemption from the full continuing education requirement?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: "Yes. Licensees who've held a Texas barber license for at least 15 years only need 2 hours instead of 4 — one hour of sanitation and one hour of human trafficking awareness, no electives required.",
+              },
+            },
+            {
+              '@type': 'Question',
+              name: 'How long is one hour of continuing education?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'TDLR defines one hour of continuing education as 50 minutes of actual instruction time, not a full 60-minute clock hour.',
+              },
+            },
+          ],
+        },
+      ],
+    },
+    staticContent: `
+<h1>Texas Barber License Renewal &amp; Continuing Education, Explained</h1>
+<p>A Class A Barber license in Texas is valid for <strong>two years</strong> from the date of issue, and renewing it requires completing continuing education (CE) first. Here's exactly what TDLR requires, sourced from TDLR's own published continuing education rules.</p>
+
+<h2>How many CE hours you need</h2>
+<ul>
+<li><strong>4 hours total</strong> every 2-year renewal cycle, made up of:</li>
+<li><strong>1 hour</strong> of sanitation</li>
+<li><strong>1 hour</strong> of human trafficking awareness</li>
+<li><strong>2 hours</strong> of electives — sanitation, state laws and rules, mental health awareness, or other TDLR-approved coursework</li>
+</ul>
+
+<h2>The 15-year exemption</h2>
+<p>If you've held a Texas barber license for <strong>at least 15 years</strong>, the requirement drops to just <strong>2 hours</strong> instead of 4 — one hour of sanitation and one hour of human trafficking awareness, with no elective hours required.</p>
+
+<h2>What counts as an "hour"</h2>
+<p>TDLR defines one hour of continuing education as <strong>50 minutes</strong> of actual instruction time, not a full 60-minute clock hour. Course providers are required to report your completion to TDLR within <strong>7 days</strong>; if it hasn't posted after a week, contact your CE provider directly before contacting TDLR. Keep your completion certificates on file for <strong>2 years</strong> in case of an audit.</p>
+
+<h2>Renewing your license</h2>
+<p>Renewal itself is handled through TDLR's online license renewal system once your continuing education is complete and reported. TDLR's renewal page has the current renewal fee, late-renewal penalties, and grace-period details — those change over time, so check the official page below rather than relying on a secondhand number.</p>
+
+<h2>How FadeJunkie helps</h2>
+<p>FadeJunkie's free tools are built for <a href="/education">exam prep</a>, not CE credit — this guide exists because "how do I renew" is a real question new licensees ask right after passing. See also the <a href="/guide/texas-barber-state-board-exam">Texas barber state board exam guide</a> for what it takes to get licensed in the first place.</p>
+
+<h2>FAQ</h2>
+<p><strong>How often do I need to renew?</strong><br>Every two years.</p>
+<p><strong>How many CE hours do I need?</strong><br>4 hours: 1 sanitation, 1 human trafficking awareness, 2 electives.</p>
+<p><strong>Is there an exemption?</strong><br>Yes — 15+ years licensed in Texas drops it to 2 hours (sanitation + human trafficking awareness only).</p>
+<p><strong>How long is one CE "hour"?</strong><br>50 minutes of actual instruction.</p>
+
+<h2>Sources</h2>
+<ul>
+<li><a href="https://www.tdlr.texas.gov/barbering-and-cosmetology/individuals/continuing-education.htm" rel="noopener">TDLR — Continuing Education Requirements for Barbers and Cosmetologists</a></li>
+<li><a href="https://www.tdlr.texas.gov/barbering-and-cosmetology/individuals/renew/" rel="noopener">TDLR — Renew Your Barbering or Cosmetology License</a></li>
 </ul>`,
   },
 }

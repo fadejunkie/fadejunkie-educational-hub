@@ -12,6 +12,7 @@ import Profile from './pages/Profile'
 import AccountSettings from './pages/AccountSettings'
 import PracticalExamGuide from './pages/PracticalExamGuide'
 import TexasBarberExamGuide from './pages/TexasBarberExamGuide'
+import TexasBarberLicenseRenewalGuide from './pages/TexasBarberLicenseRenewalGuide'
 import Admin from './pages/Admin'
 import Growth from './pages/Growth'
 
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/education/quiz" element={<Quiz />} />
           <Route path="/education/practical" element={<PracticalExamGuide />} />
           <Route path="/guide/texas-barber-state-board-exam" element={<TexasBarberExamGuide />} />
+          <Route path="/guide/texas-barber-license-renewal" element={<TexasBarberLicenseRenewalGuide />} />
           <Route path="/education/room" element={<Room />} />
           <Route path="/partners" element={<Partners />} />
           <Route path="/barber" element={<Barber />} />
