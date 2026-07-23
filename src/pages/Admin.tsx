@@ -725,7 +725,7 @@ function QuizQuestionPreview({
         <span style={{ fontSize: '12px', color: 'var(--color-warm-300)' }}>Q {id} of 300 · {topic}</span>
       </div>
 
-      <div style={{ background: '#edecea', padding: '32px 24px 48px', borderRadius: '0 0 14px 14px' }}>
+      <div style={{ background: '#e5e3df', padding: '32px 24px 48px', borderRadius: '0 0 14px 14px' }}>
         <div style={{ maxWidth: '560px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-black-95)' }}>
