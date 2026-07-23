@@ -725,7 +725,7 @@ function QuizQuestionPreview({
         <span style={{ fontSize: '12px', color: 'var(--color-warm-300)' }}>Q {id} of 300 · {topic}</span>
       </div>
 
-      <div style={{ background: 'var(--color-warm-white)', padding: '32px 24px 48px', borderRadius: '0 0 14px 14px' }}>
+      <div style={{ background: '#edecea', padding: '32px 24px 48px', borderRadius: '0 0 14px 14px' }}>
         <div style={{ maxWidth: '560px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-black-95)' }}>
@@ -733,14 +733,14 @@ function QuizQuestionPreview({
             </span>
             <span className="fj-badge">{topic}</span>
           </div>
-          <div style={{ height: '4px', background: 'rgba(0,0,0,0.07)', borderRadius: '99px', marginBottom: '32px', overflow: 'hidden' }}>
+          <div style={{ height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: '99px', marginBottom: '32px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '100%', background: 'var(--color-blue)', borderRadius: '99px' }} />
           </div>
 
           <QuizQuestionCard question={question} />
           <QuizChoices choices={choices} answer={answer} selected={answer} answered onSelect={() => {}} />
           <QuizExplanation explanation={explanation} />
-          <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(0,0,0,0.35)', margin: 0 }}>
+          <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(0,0,0,0.4)', margin: 0 }}>
             Preview only — shown with the correct answer already revealed.
           </p>
         </div>
