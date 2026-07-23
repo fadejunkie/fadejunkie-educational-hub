@@ -3,18 +3,24 @@ import { Link } from 'react-router-dom'
 import { SignedIn, SignedOut, useUser, SignInButton } from '@clerk/clerk-react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import { TOPICS } from '../data/studyData'
+import { FlashCardVisual, QuizQuestionCard, QuizChoices, QuizExplanation } from '../components/StudyPreview'
+import type { Id } from '../../convex/_generated/dataModel'
 
-type Section = 'overview' | 'users' | 'demos' | 'tickets' | 'partners' | 'barber' | 'waitlist'
+type Section = 'overview' | 'users' | 'content' | 'demos' | 'tickets' | 'partners' | 'barber' | 'waitlist'
 
 const SECTIONS: [Section, string][] = [
   ['overview', 'Overview'],
   ['users', 'Users'],
+  ['content', 'Study Content'],
   ['demos', "DEMO's"],
   ['tickets', 'Dev Tickets'],
   ['partners', 'Partners'],
   ['barber', 'Barber Pages'],
   ['waitlist', 'Waitlist'],
 ]
+
+const CONTENT_TOPICS = TOPICS.filter(t => t !== 'All')
 
 const card: React.CSSProperties = {
   background: 'var(--color-white)',
@@ -25,6 +31,8 @@ const card: React.CSSProperties = {
 }
 const cardHeader: React.CSSProperties = { padding: '20px 24px', borderBottom: 'var(--border-whisper)' }
 const rowBase: React.CSSProperties = { padding: '12px 24px', borderTop: 'var(--border-whisper)', fontSize: '13px' }
+const contentInputStyle: React.CSSProperties = { fontSize: '13px', padding: '9px 12px', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '8px', outline: 'none' }
+const CONTENT_LIST_LIMIT = 60
 
 function fmtDate(ts: number) {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
@@ -579,6 +587,499 @@ function WaitlistTab() {
   )
 }
 
+// ── Study Content tab — admin-editable flashcards + quiz questions ────────
+// Lets Anthony edit any question/answer directly; edits go live immediately
+// since Flash.tsx/Quiz.tsx read from the same Convex tables. Preview reuses
+// the exact live-page rendering components from components/StudyPreview.
+
+function PreviewModal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+      }}
+    >
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+          <button
+            onClick={onClose}
+            style={{ fontSize: '13px', fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer' }}
+          >
+            Close preview ✕
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function FlashCardPreview({ question, answer, onClose }: { question: string; answer: string; onClose: () => void }) {
+  const [flipped, setFlipped] = useState(false)
+  return (
+    <PreviewModal onClose={onClose}>
+      <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+        <FlashCardVisual question={question} answer={answer} flipped={flipped} onFlip={() => setFlipped(f => !f)} />
+        <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.85)', marginTop: '12px' }}>
+          Tap the card to flip — exactly as it renders on /education/flash
+        </p>
+      </div>
+    </PreviewModal>
+  )
+}
+
+function QuizQuestionPreview({
+  question, choices, answer, explanation, onClose,
+}: { question: string; choices: string[]; answer: number; explanation: string; onClose: () => void }) {
+  return (
+    <PreviewModal onClose={onClose}>
+      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+        <QuizQuestionCard question={question} />
+        <QuizChoices choices={choices} answer={answer} selected={answer} answered onSelect={() => {}} />
+        <QuizExplanation explanation={explanation} />
+        <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>
+          Shown with the correct answer revealed — exactly as it renders on /education/quiz after answering
+        </p>
+      </div>
+    </PreviewModal>
+  )
+}
+
+function TopicSelect({ value, onChange }: { value: string; onChange: (t: string) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', alignSelf: 'flex-start' }}
+    >
+      {CONTENT_TOPICS.map(t => <option key={t} value={t}>{t}</option>)}
+    </select>
+  )
+}
+
+type FlashCardDoc = { _id: Id<'flashCards'>; id: number; topic: string; question: string; answer: string }
+
+function FlashCardRow({ card }: { card: FlashCardDoc }) {
+  const [editing, setEditing] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const [topic, setTopic] = useState(card.topic)
+  const [question, setQuestion] = useState(card.question)
+  const [answer, setAnswer] = useState(card.answer)
+  const [saving, setSaving] = useState(false)
+  const update = useMutation(api.studyContent.updateFlashCard)
+  const del = useMutation(api.studyContent.deleteFlashCard)
+
+  async function save() {
+    if (!question.trim() || !answer.trim() || saving) return
+    setSaving(true)
+    try {
+      await update({ id: card._id, topic, question, answer })
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function cancel() {
+    setTopic(card.topic); setQuestion(card.question); setAnswer(card.answer)
+    setEditing(false)
+  }
+
+  async function remove() {
+    if (!window.confirm(`Delete flashcard #${card.id}? This can't be undone.`)) return
+    await del({ id: card._id })
+  }
+
+  return (
+    <div style={rowBase}>
+      {!editing ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+              <Pill label={card.topic} />
+              <span style={{ fontSize: '11px', color: 'rgba(0,0,0,0.35)' }}>#{card.id}</span>
+            </div>
+            <div style={{ fontWeight: 600, color: 'var(--color-black-95)' }}>{card.question}</div>
+            <div style={{ fontSize: '13px', color: 'rgba(0,0,0,0.55)', marginTop: '4px' }}>{card.answer}</div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexShrink: 0, flexWrap: 'wrap' }}>
+            <button onClick={() => setPreviewing(true)} className="fj-btn-secondary" style={{ fontSize: '12px', padding: '5px 10px' }}>Preview</button>
+            <button
+              onClick={() => setEditing(true)}
+              style={{ fontSize: '12px', fontWeight: 600, padding: '5px 10px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', background: 'var(--color-white)', color: 'var(--color-blue)', cursor: 'pointer' }}
+            >
+              Edit
+            </button>
+            <button onClick={remove} style={{ fontSize: '12px', color: '#c4492a', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <TopicSelect value={topic} onChange={setTopic} />
+          <textarea value={question} onChange={e => setQuestion(e.target.value)} rows={2} placeholder="Question" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+          <textarea value={answer} onChange={e => setAnswer(e.target.value)} rows={2} placeholder="Answer" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={save} disabled={saving || !question.trim() || !answer.trim()} className="fj-btn-primary" style={{ fontSize: '13px', opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button onClick={cancel} style={{ fontSize: '13px', color: 'rgba(0,0,0,0.5)', background: 'none', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '8px', padding: '9px 14px', cursor: 'pointer' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {previewing && <FlashCardPreview question={card.question} answer={card.answer} onClose={() => setPreviewing(false)} />}
+    </div>
+  )
+}
+
+function NewFlashCardForm({ onDone }: { onDone: () => void }) {
+  const [topic, setTopic] = useState<string>(CONTENT_TOPICS[0])
+  const [question, setQuestion] = useState('')
+  const [answer, setAnswer] = useState('')
+  const [saving, setSaving] = useState(false)
+  const create = useMutation(api.studyContent.createFlashCard)
+
+  async function save() {
+    if (!question.trim() || !answer.trim() || saving) return
+    setSaving(true)
+    try {
+      await create({ topic, question, answer })
+      setQuestion(''); setAnswer('')
+      onDone()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <TopicSelect value={topic} onChange={setTopic} />
+      <textarea value={question} onChange={e => setQuestion(e.target.value)} rows={2} placeholder="Question" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+      <textarea value={answer} onChange={e => setAnswer(e.target.value)} rows={2} placeholder="Answer" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+      <button onClick={save} disabled={saving || !question.trim() || !answer.trim()} className="fj-btn-primary" style={{ fontSize: '13px', alignSelf: 'flex-end', opacity: saving ? 0.6 : 1 }}>
+        {saving ? 'Adding…' : 'Add flashcard'}
+      </button>
+    </div>
+  )
+}
+
+function FlashCardsPanel() {
+  const cards = useQuery(api.studyContent.listFlashCards)
+  const [topicFilter, setTopicFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [showForm, setShowForm] = useState(false)
+
+  const filtered = (cards ?? [])
+    .filter(c => topicFilter === 'all' || c.topic === topicFilter)
+    .filter(c => {
+      if (!search.trim()) return true
+      const s = search.toLowerCase()
+      return c.question.toLowerCase().includes(s) || c.answer.toLowerCase().includes(s)
+    })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={card}>
+        <div style={{ ...cardHeader, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search question or answer…"
+            style={{ ...contentInputStyle, flex: '1 1 240px' }}
+          />
+          <button onClick={() => setShowForm(s => !s)} className="fj-btn-primary" style={{ fontSize: '13px' }}>
+            {showForm ? 'Cancel' : '+ Add flashcard'}
+          </button>
+        </div>
+        {showForm && <NewFlashCardForm onDone={() => setShowForm(false)} />}
+      </div>
+
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        {(['all', ...CONTENT_TOPICS] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTopicFilter(t)}
+            style={{
+              padding: '5px 12px', fontSize: '12px', fontWeight: 500, borderRadius: '9999px',
+              border: '1px solid rgba(0,0,0,0.12)',
+              background: topicFilter === t ? 'var(--color-blue)' : 'var(--color-white)',
+              color: topicFilter === t ? '#fff' : 'rgba(0,0,0,0.6)', cursor: 'pointer',
+            }}
+          >
+            {t === 'all' ? 'All topics' : t}
+          </button>
+        ))}
+      </div>
+
+      <div style={card}>
+        {cards === undefined ? (
+          <div style={{ padding: '24px', fontSize: '13px', color: 'rgba(0,0,0,0.5)' }}>Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '24px', fontSize: '13px', color: 'rgba(0,0,0,0.5)' }}>No flashcards match.</div>
+        ) : (
+          <>
+            {filtered.slice(0, CONTENT_LIST_LIMIT).map(c => <FlashCardRow key={c._id} card={c} />)}
+            {filtered.length > CONTENT_LIST_LIMIT && (
+              <div style={{ padding: '14px 24px', fontSize: '12px', color: 'rgba(0,0,0,0.4)', borderTop: rowBase.borderTop }}>
+                Showing {CONTENT_LIST_LIMIT} of {filtered.length} — narrow by topic or search to see more.
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+type QuizQuestionDoc = { _id: Id<'quizQuestions'>; id: number; topic: string; question: string; choices: string[]; answer: number; explanation: string }
+
+function ChoiceEditor({
+  choices, answer, onChoicesChange, onAnswerChange,
+}: { choices: string[]; answer: number; onChoicesChange: (c: string[]) => void; onAnswerChange: (a: number) => void }) {
+  function updateChoice(idx: number, val: string) {
+    onChoicesChange(choices.map((c, i) => i === idx ? val : c))
+  }
+  function removeChoice(idx: number) {
+    if (choices.length <= 2) return
+    onChoicesChange(choices.filter((_, i) => i !== idx))
+    if (answer === idx) onAnswerChange(0)
+    else if (answer > idx) onAnswerChange(answer - 1)
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {choices.map((c, i) => (
+        <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input type="radio" checked={answer === i} onChange={() => onAnswerChange(i)} title="Mark as correct answer" />
+          <input value={c} onChange={e => updateChoice(i, e.target.value)} style={{ ...contentInputStyle, flex: 1 }} placeholder={`Choice ${i + 1}`} />
+          {choices.length > 2 && (
+            <button onClick={() => removeChoice(i)} style={{ fontSize: '12px', color: 'rgba(0,0,0,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          )}
+        </div>
+      ))}
+      <button
+        onClick={() => onChoicesChange([...choices, ''])}
+        style={{ fontSize: '12px', color: 'var(--color-blue)', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start' }}
+      >
+        + Add choice
+      </button>
+    </div>
+  )
+}
+
+function QuizQuestionRow({ q }: { q: QuizQuestionDoc }) {
+  const [editing, setEditing] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const [topic, setTopic] = useState(q.topic)
+  const [question, setQuestion] = useState(q.question)
+  const [choices, setChoices] = useState<string[]>(q.choices)
+  const [answer, setAnswer] = useState(q.answer)
+  const [explanation, setExplanation] = useState(q.explanation)
+  const [saving, setSaving] = useState(false)
+  const update = useMutation(api.studyContent.updateQuizQuestion)
+  const del = useMutation(api.studyContent.deleteQuizQuestion)
+
+  async function save() {
+    if (!question.trim() || choices.some(c => !c.trim()) || saving) return
+    setSaving(true)
+    try {
+      await update({ id: q._id, topic, question, choices, answer, explanation })
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function cancel() {
+    setTopic(q.topic); setQuestion(q.question); setChoices(q.choices); setAnswer(q.answer); setExplanation(q.explanation)
+    setEditing(false)
+  }
+
+  async function remove() {
+    if (!window.confirm(`Delete quiz question #${q.id}? This can't be undone.`)) return
+    await del({ id: q._id })
+  }
+
+  return (
+    <div style={rowBase}>
+      {!editing ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+              <Pill label={q.topic} />
+              <span style={{ fontSize: '11px', color: 'rgba(0,0,0,0.35)' }}>#{q.id}</span>
+            </div>
+            <div style={{ fontWeight: 600, color: 'var(--color-black-95)' }}>{q.question}</div>
+            <div style={{ fontSize: '12px', color: 'rgba(0,0,0,0.55)', marginTop: '4px' }}>
+              {q.choices.map((c, i) => (
+                <div key={i} style={{ color: i === q.answer ? '#0f7a28' : undefined, fontWeight: i === q.answer ? 600 : 400 }}>
+                  {i === q.answer ? '✓ ' : '· '}{c}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexShrink: 0, flexWrap: 'wrap' }}>
+            <button onClick={() => setPreviewing(true)} className="fj-btn-secondary" style={{ fontSize: '12px', padding: '5px 10px' }}>Preview</button>
+            <button
+              onClick={() => setEditing(true)}
+              style={{ fontSize: '12px', fontWeight: 600, padding: '5px 10px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', background: 'var(--color-white)', color: 'var(--color-blue)', cursor: 'pointer' }}
+            >
+              Edit
+            </button>
+            <button onClick={remove} style={{ fontSize: '12px', color: '#c4492a', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <TopicSelect value={topic} onChange={setTopic} />
+          <textarea value={question} onChange={e => setQuestion(e.target.value)} rows={2} placeholder="Question" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+          <ChoiceEditor choices={choices} answer={answer} onChoicesChange={setChoices} onAnswerChange={setAnswer} />
+          <textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} placeholder="Explanation" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={save} disabled={saving || !question.trim() || choices.some(c => !c.trim())} className="fj-btn-primary" style={{ fontSize: '13px', opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button onClick={cancel} style={{ fontSize: '13px', color: 'rgba(0,0,0,0.5)', background: 'none', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '8px', padding: '9px 14px', cursor: 'pointer' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {previewing && (
+        <QuizQuestionPreview question={q.question} choices={q.choices} answer={q.answer} explanation={q.explanation} onClose={() => setPreviewing(false)} />
+      )}
+    </div>
+  )
+}
+
+function NewQuizQuestionForm({ onDone }: { onDone: () => void }) {
+  const [topic, setTopic] = useState<string>(CONTENT_TOPICS[0])
+  const [question, setQuestion] = useState('')
+  const [choices, setChoices] = useState<string[]>(['', '', '', ''])
+  const [answer, setAnswer] = useState(0)
+  const [explanation, setExplanation] = useState('')
+  const [saving, setSaving] = useState(false)
+  const create = useMutation(api.studyContent.createQuizQuestion)
+
+  async function save() {
+    if (!question.trim() || choices.some(c => !c.trim()) || saving) return
+    setSaving(true)
+    try {
+      await create({ topic, question, choices, answer, explanation })
+      setQuestion(''); setChoices(['', '', '', '']); setAnswer(0); setExplanation('')
+      onDone()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <TopicSelect value={topic} onChange={setTopic} />
+      <textarea value={question} onChange={e => setQuestion(e.target.value)} rows={2} placeholder="Question" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+      <ChoiceEditor choices={choices} answer={answer} onChoicesChange={setChoices} onAnswerChange={setAnswer} />
+      <textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} placeholder="Explanation" style={{ ...contentInputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+      <button onClick={save} disabled={saving || !question.trim() || choices.some(c => !c.trim())} className="fj-btn-primary" style={{ fontSize: '13px', alignSelf: 'flex-end', opacity: saving ? 0.6 : 1 }}>
+        {saving ? 'Adding…' : 'Add question'}
+      </button>
+    </div>
+  )
+}
+
+function QuizQuestionsPanel() {
+  const questions = useQuery(api.studyContent.listQuizQuestions)
+  const [topicFilter, setTopicFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [showForm, setShowForm] = useState(false)
+
+  const filtered = (questions ?? [])
+    .filter(q => topicFilter === 'all' || q.topic === topicFilter)
+    .filter(q => {
+      if (!search.trim()) return true
+      const s = search.toLowerCase()
+      return q.question.toLowerCase().includes(s) || q.choices.some(c => c.toLowerCase().includes(s))
+    })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={card}>
+        <div style={{ ...cardHeader, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search question or choices…"
+            style={{ ...contentInputStyle, flex: '1 1 240px' }}
+          />
+          <button onClick={() => setShowForm(s => !s)} className="fj-btn-primary" style={{ fontSize: '13px' }}>
+            {showForm ? 'Cancel' : '+ Add question'}
+          </button>
+        </div>
+        {showForm && <NewQuizQuestionForm onDone={() => setShowForm(false)} />}
+      </div>
+
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        {(['all', ...CONTENT_TOPICS] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTopicFilter(t)}
+            style={{
+              padding: '5px 12px', fontSize: '12px', fontWeight: 500, borderRadius: '9999px',
+              border: '1px solid rgba(0,0,0,0.12)',
+              background: topicFilter === t ? 'var(--color-blue)' : 'var(--color-white)',
+              color: topicFilter === t ? '#fff' : 'rgba(0,0,0,0.6)', cursor: 'pointer',
+            }}
+          >
+            {t === 'all' ? 'All topics' : t}
+          </button>
+        ))}
+      </div>
+
+      <div style={card}>
+        {questions === undefined ? (
+          <div style={{ padding: '24px', fontSize: '13px', color: 'rgba(0,0,0,0.5)' }}>Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '24px', fontSize: '13px', color: 'rgba(0,0,0,0.5)' }}>No quiz questions match.</div>
+        ) : (
+          <>
+            {filtered.slice(0, CONTENT_LIST_LIMIT).map(q => <QuizQuestionRow key={q._id} q={q} />)}
+            {filtered.length > CONTENT_LIST_LIMIT && (
+              <div style={{ padding: '14px 24px', fontSize: '12px', color: 'rgba(0,0,0,0.4)', borderTop: rowBase.borderTop }}>
+                Showing {CONTENT_LIST_LIMIT} of {filtered.length} — narrow by topic or search to see more.
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StudyContentTab() {
+  const [mode, setMode] = useState<'flash' | 'quiz'>('flash')
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'inline-flex', gap: '2px', padding: '2px', background: 'rgba(0,0,0,0.04)', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)', width: 'fit-content' }}>
+        {(['flash', 'quiz'] as const).map(m => (
+          <button
+            key={m}
+            onClick={() => setMode(m)}
+            style={{
+              padding: '6px 14px', fontSize: '12px', fontWeight: 600, borderRadius: '4px',
+              background: mode === m ? 'var(--color-black-95)' : 'transparent',
+              color: mode === m ? '#fff' : 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer',
+            }}
+          >
+            {m === 'flash' ? 'Flashcards' : 'Quiz Questions'}
+          </button>
+        ))}
+      </div>
+      {mode === 'flash' ? <FlashCardsPanel /> : <QuizQuestionsPanel />}
+    </div>
+  )
+}
+
 export default function Admin() {
   const [active, setActive] = useState<Section>('overview')
   const { user } = useUser()
@@ -617,7 +1118,7 @@ export default function Admin() {
                   Admin
                 </h1>
                 <p style={{ fontSize: '13px', color: 'rgba(0,0,0,0.6)', margin: 0 }}>
-                  Manage users, partners, barber pages, and drop tickets for Claude.
+                  Manage users, study content, partners, barber pages, and drop tickets for Claude.
                 </p>
               </div>
             </section>
@@ -643,6 +1144,7 @@ export default function Admin() {
 
                 {active === 'overview' && <OverviewTab />}
                 {active === 'users' && <UsersTab />}
+                {active === 'content' && <StudyContentTab />}
                 {active === 'demos' && <DemosTab />}
                 {active === 'tickets' && <TicketsTab />}
                 {active === 'partners' && <PartnersTab />}

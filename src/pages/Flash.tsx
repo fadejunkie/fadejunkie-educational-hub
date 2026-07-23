@@ -1,11 +1,14 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RotateCcw, Star } from 'lucide-react'
-import { ALL_FLASH_CARDS, TOPICS, parseTopicsParam, type Topic } from '../data/studyData'
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import { ALL_FLASH_CARDS, TOPICS, parseTopicsParam, type Topic, type FlashCard } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
 import PageMeta from '../components/PageMeta'
 import { routeMeta } from '../data/routeMeta.mjs'
 import { useEduAccess } from '../hooks/useEduAccess'
+import { FlashCardVisual } from '../components/StudyPreview'
 
 // Mode toggle shared between Flashcards and Quiz pages
 function ModeToggle({ mode }: { mode: 'flash' | 'quiz' }) {
@@ -46,24 +49,32 @@ export default function Flash() {
   const [starred, setStarred] = useState<Set<number>>(new Set())
   const [starredOnly, setStarredOnly] = useState(false)
 
+  // Live-editable content from Convex (admin's Study Content tab), falling
+  // back to the bundled static array while the query loads — the seeded
+  // rows are identical to the static data, so this swap is invisible unless
+  // an admin has actually edited something.
+  const liveCards = useQuery(api.studyContent.listFlashCards) as FlashCard[] | undefined
+  const allCards = liveCards ?? ALL_FLASH_CARDS
+
   // Once access resolves: free users are locked to exactly one topic (no All, no multi-select)
   useEffect(() => {
     if (!loading && !hasAccess && selectedTopics.length !== 1) {
       const firstTopic = selectedTopics[0]
-        ?? TOPICS.find(t => t !== 'All' && ALL_FLASH_CARDS.some(c => c.topic === t))
+        ?? TOPICS.find(t => t !== 'All' && allCards.some(c => c.topic === t))
       if (firstTopic) {
         setSelectedTopics([firstTopic])
         setIndex(0)
         setFlipped(false)
       }
     }
-  }, [loading, hasAccess])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, hasAccess, allCards])
 
   const deck = useMemo(() => {
-    let cards = selectedTopics.length === 0 ? ALL_FLASH_CARDS : ALL_FLASH_CARDS.filter(c => selectedTopics.includes(c.topic))
+    let cards = selectedTopics.length === 0 ? allCards : allCards.filter(c => selectedTopics.includes(c.topic))
     if (starredOnly) cards = cards.filter(c => starred.has(c.id))
     return cards
-  }, [selectedTopics, starredOnly, starred])
+  }, [allCards, selectedTopics, starredOnly, starred])
 
   const card = deck[index] ?? null
   const total = deck.length
@@ -102,7 +113,7 @@ export default function Flash() {
   }
 
   const isStarred = card ? starred.has(card.id) : false
-  const availableTopics = TOPICS.filter(t => t === 'All' || ALL_FLASH_CARDS.some(c => c.topic === t))
+  const availableTopics = TOPICS.filter(t => t === 'All' || allCards.some(c => c.topic === t))
 
   return (
     <>
@@ -212,45 +223,12 @@ export default function Flash() {
             </div>
 
             {/* Flip card */}
-            <div
-              style={{ perspective: '1400px', cursor: 'pointer', width: '100%' }}
-              onClick={() => setFlipped(f => !f)}
-            >
-              <div style={{
-                position: 'relative',
-                height: '300px',
-                transformStyle: 'preserve-3d',
-                transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                transition: 'transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}>
-                {/* Front — Question */}
-                <div style={{
-                  position: 'absolute', inset: 0, backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-                  background: 'var(--color-white)', border: '1px solid rgba(0,0,0,0.08)',
-                  borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-card)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  padding: '40px 32px', textAlign: 'center',
-                }}>
-                  <span style={{ position: 'absolute', top: '18px', right: '18px', fontSize: '0.7rem', color: 'var(--color-warm-300)' }}>Question</span>
-                  <p style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--color-black-95)', lineHeight: 1.55, margin: 0, letterSpacing: '-0.15px' }}>{card?.question}</p>
-                  <div style={{ position: 'absolute', bottom: '18px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-warm-300)' }}>
-                    <RotateCcw size={12} /> tap to flip
-                  </div>
-                </div>
-
-                {/* Back — Answer */}
-                <div style={{
-                  position: 'absolute', inset: 0, backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)', background: 'var(--color-warm-white)',
-                  border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-xl)',
-                  boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', padding: '40px 32px', textAlign: 'center',
-                }}>
-                  <span style={{ position: 'absolute', top: '18px', right: '18px', fontSize: '0.7rem', color: 'var(--color-blue)', fontWeight: 600, letterSpacing: '0.06em' }}>Answer</span>
-                  <p style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--color-black-95)', lineHeight: 1.65, margin: 0 }}>{card?.answer}</p>
-                </div>
-              </div>
-            </div>
+            <FlashCardVisual
+              question={card?.question ?? ''}
+              answer={card?.answer ?? ''}
+              flipped={flipped}
+              onFlip={() => setFlipped(f => !f)}
+            />
 
             {/* Controls row — mirrors Quiz button style */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>

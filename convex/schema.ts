@@ -137,6 +137,50 @@ export default defineSchema({
     .index("by_status",     ["status"])
     .index("by_created_at", ["createdAt"]),
 
+  // ── Newsletter / lifecycle email subscribers ─────────────────────────────
+  subscribers: defineTable({
+    email:             v.string(),
+    source:            v.union(v.literal("waitlist"), v.literal("users"), v.literal("signup_form")),
+    role:              v.optional(v.string()),
+    hasPass:           v.boolean(),
+    status:            v.union(v.literal("subscribed"), v.literal("unsubscribed")),
+    unsubscribeToken:  v.string(),
+    clerkId:           v.optional(v.string()),
+    tags:              v.array(v.string()),
+    flowStep:          v.optional(v.string()),
+    nextSendAt:        v.optional(v.number()),
+    lastEmailedAt:     v.optional(v.number()),
+    createdAt:         v.number(),
+  })
+    .index("by_email",         ["email"])
+    .index("by_status",        ["status"])
+    .index("by_clerk_id",      ["clerkId"])
+    .index("by_next_send",     ["nextSendAt"]),
+
+  // ── Study content (Education Hub flashcards + quiz questions) ────────────
+  // Admin-editable; `num` preserves the original stable id (1..N) so
+  // existing `starredCards.cardId` (`quiz-<num>`) and quiz result lookups
+  // keep working across edits.
+  flashCards: defineTable({
+    num:       v.number(),
+    topic:     v.string(),
+    question:  v.string(),
+    answer:    v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_num", ["num"]),
+
+  quizQuestions: defineTable({
+    num:         v.number(),
+    topic:       v.string(),
+    question:    v.string(),
+    choices:     v.array(v.string()),
+    answer:      v.number(), // index into choices
+    explanation: v.string(),
+    createdAt:   v.number(),
+    updatedAt:   v.number(),
+  }).index("by_num", ["num"]),
+
   // ── School demo pipeline (admin-only micro CRM) ──────────────────────────
   schoolDemos: defineTable({
     createdBy:     v.id("users"),

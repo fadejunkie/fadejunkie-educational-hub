@@ -1,15 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react'
-import { useMutation } from 'convex/react'
+import { RotateCcw, Trophy } from 'lucide-react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useUser } from '@clerk/clerk-react'
-import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, parseTopicsParam, type Topic, type QuizCount } from '../data/studyData'
+import { ALL_QUIZ_QUESTIONS, TOPICS, QUIZ_COUNTS, parseTopicsParam, type Topic, type QuizCount, type QuizQuestion } from '../data/studyData'
 import PaywallGate from '../components/PaywallGate'
 import PageMeta from '../components/PageMeta'
 import { routeMeta } from '../data/routeMeta.mjs'
 import { useEduAccess } from '../hooks/useEduAccess'
 import { useStudyPreferences } from '../hooks/useStudyPreferences'
+import { QuizQuestionCard, QuizChoices, QuizExplanation } from '../components/StudyPreview'
 
 // Shared mode toggle (mirrors Flash.tsx)
 function ModeToggle({ mode }: { mode: 'flash' | 'quiz' }) {
@@ -75,14 +76,22 @@ function QuizContent() {
   const starMissed = useMutation(api.starredCards.star)
   const { prefs, loading: prefsLoading } = useStudyPreferences()
 
+  // Live-editable content from Convex (admin's Study Content tab), falling
+  // back to the bundled static array while the query loads — the seeded
+  // rows are identical to the static data, so this swap is invisible unless
+  // an admin has actually edited something.
+  const liveQuestions = useQuery(api.studyContent.listQuizQuestions) as QuizQuestion[] | undefined
+  const allQuestions = liveQuestions ?? ALL_QUIZ_QUESTIONS
+
   // Once access resolves: free users are locked to exactly one topic (no All, no multi-select)
   useEffect(() => {
     if (!loading && !hasAccess && selectedTopics.length !== 1) {
       const firstTopic = selectedTopics[0]
-        ?? TOPICS.find(t => t !== 'All' && ALL_QUIZ_QUESTIONS.some(q => q.topic === t))
+        ?? TOPICS.find(t => t !== 'All' && allQuestions.some(q => q.topic === t))
       if (firstTopic) setSelectedTopics([firstTopic])
     }
-  }, [loading, hasAccess])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, hasAccess, allQuestions])
 
   // Free users are capped at the 20-question quiz — enforce even if a stale
   // preference (or the default-length effect below) set count higher.
@@ -108,14 +117,14 @@ function QuizContent() {
   const breakdown = useMemo(() => {
     const map: Record<string, { correct: number; total: number }> = {}
     answers.forEach(ans => {
-      const q = ALL_QUIZ_QUESTIONS.find(q => q.id === ans.questionId)
+      const q = allQuestions.find(q => q.id === ans.questionId)
       if (!q) return
       if (!map[q.topic]) map[q.topic] = { correct: 0, total: 0 }
       map[q.topic].total++
       if (ans.correct) map[q.topic].correct++
     })
     return map
-  }, [answers])
+  }, [answers, allQuestions])
 
   const score = answers.filter(a => a.correct).length
   const pct = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0
@@ -150,8 +159,8 @@ function QuizContent() {
 
   function startQuiz() {
     const pool = selectedTopics.length === 0
-      ? ALL_QUIZ_QUESTIONS
-      : ALL_QUIZ_QUESTIONS.filter(q => selectedTopics.includes(q.topic))
+      ? allQuestions
+      : allQuestions.filter(q => selectedTopics.includes(q.topic))
     const chosen = shuffle(pool).slice(0, Math.min(count, pool.length))
     setQuestions(chosen)
     setQIndex(0)
@@ -232,7 +241,7 @@ function QuizContent() {
               Topic
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {TOPICS.filter(t => t === 'All' || ALL_QUIZ_QUESTIONS.some(q => q.topic === t)).map(t => {
+              {TOPICS.filter(t => t === 'All' || allQuestions.some(q => q.topic === t)).map(t => {
                 const isDisabled = !hasAccess && t === 'All'
                 const isActive = t === 'All' ? selectedTopics.length === 0 : selectedTopics.includes(t as Exclude<Topic, 'All'>)
                 return (
@@ -269,8 +278,8 @@ function QuizContent() {
             <div style={{ display: 'flex', gap: '8px' }}>
               {QUIZ_COUNTS.map(n => {
                 const available = selectedTopics.length === 0
-                  ? ALL_QUIZ_QUESTIONS.length
-                  : ALL_QUIZ_QUESTIONS.filter(q => selectedTopics.includes(q.topic)).length
+                  ? allQuestions.length
+                  : allQuestions.filter(q => selectedTopics.includes(q.topic)).length
                 const locked = !hasAccess && n !== 20
                 const disabled = n > available || locked
                 return (
@@ -464,106 +473,21 @@ function QuizContent() {
         </div>
 
         {/* Question */}
-        <div style={{
-          background: 'var(--color-white)',
-          border: '1px solid rgba(0,0,0,0.08)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-card)',
-          padding: '32px',
-          marginBottom: '20px',
-        }}>
-          <p style={{
-            fontSize: '1.15rem',
-            fontWeight: 600,
-            color: 'var(--color-black-95)',
-            lineHeight: 1.55,
-            margin: 0,
-            letterSpacing: '-0.15px',
-          }}>
-            {currentQ.question}
-          </p>
-        </div>
+        <QuizQuestionCard question={currentQ.question} />
 
         {/* Choices */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-          {currentQ.choices.map((choice: string, idx: number) => {
-            const isCorrect = idx === currentQ.answer
-            const isSelected = selected === idx
-
-            let bg = 'var(--color-white)'
-            let border = '1px solid rgba(0,0,0,0.10)'
-            let color = 'var(--color-black-95)'
-            let icon = null
-
-            if (answered) {
-              if (isCorrect) {
-                bg = 'rgba(26,174,57,0.08)'
-                border = '1.5px solid #1aae39'
-                color = '#0f7a28'
-                icon = <CheckCircle2 size={18} color="#1aae39" />
-              } else if (isSelected && !isCorrect) {
-                bg = 'rgba(204,51,0,0.06)'
-                border = '1.5px solid #cc3300'
-                color = '#991a00'
-                icon = <XCircle size={18} color="#cc3300" />
-              }
-            }
-
-            return (
-              <button
-                key={idx}
-                onClick={() => handleSelect(idx)}
-                disabled={answered}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                  width: '100%',
-                  padding: '14px 18px',
-                  borderRadius: 'var(--radius-md)',
-                  border,
-                  background: bg,
-                  color,
-                  fontSize: '0.9375rem',
-                  fontWeight: isSelected || (answered && isCorrect) ? 600 : 400,
-                  textAlign: 'left',
-                  cursor: answered ? 'default' : 'pointer',
-                  transition: 'all 0.12s',
-                }}
-                onMouseEnter={e => {
-                  if (!answered) e.currentTarget.style.background = 'rgba(0,0,0,0.02)'
-                }}
-                onMouseLeave={e => {
-                  if (!answered) e.currentTarget.style.background = 'var(--color-white)'
-                }}
-              >
-                <span>{choice}</span>
-                {icon}
-              </button>
-            )
-          })}
-        </div>
+        <QuizChoices
+          choices={currentQ.choices}
+          answer={currentQ.answer}
+          selected={selected}
+          answered={answered}
+          onSelect={handleSelect}
+        />
 
         {/* Explanation + Next */}
         {answered && (
           <div style={{ animation: 'fadeUp 0.2s ease-out' }}>
-            {prefs.showExplanations && (
-              <div style={{
-                background: 'var(--color-warm-white)',
-                border: '1px solid rgba(0,0,0,0.08)',
-                borderRadius: 'var(--radius-md)',
-                padding: '16px 18px',
-                marginBottom: '16px',
-              }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-black-95)', margin: '0 0 6px' }}>
-                  Explanation
-                </p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--color-warm-500)', lineHeight: 1.6, margin: 0 }}>
-                  {currentQ.explanation}
-                </p>
-              </div>
-            )}
+            {prefs.showExplanations && <QuizExplanation explanation={currentQ.explanation} />}
 
             <button
               className="fj-btn-primary"
