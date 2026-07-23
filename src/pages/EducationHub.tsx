@@ -285,6 +285,9 @@ function PracticalExamCallout() {
           </div>
           <Link to="/education/practical" className="fj-btn-primary" style={{ fontSize: 14, padding: '10px 22px', flexShrink: 0 }}>Open Exam Guide →</Link>
         </div>
+        <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', margin: '14px 2px 0' }}>
+          New to the process? Read the <Link to="/guide/texas-barber-state-board-exam" style={{ color: 'var(--color-blue)' }}>Texas Barber State Board Exam Guide</Link> — required hours, PSI scheduling, and fees, straight from TDLR.
+        </p>
       </div>
     </section>
   )

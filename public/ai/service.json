@@ -1,0 +1,41 @@
+{
+  "name": "FadeJunkie Educational Hub",
+  "url": "https://fadejunkie.com",
+  "type": "Web application",
+  "capabilities": [
+    {
+      "name": "Flashcards",
+      "path": "/education/flash",
+      "description": "300+ Texas barber state board flashcards across 13 topics. Filter by topic, star weak spots."
+    },
+    {
+      "name": "Practice Quiz",
+      "path": "/education/quiz",
+      "description": "Timed multiple-choice quiz — 20, 50, or 100 questions, randomized or by topic, scored with a per-topic breakdown."
+    },
+    {
+      "name": "Practical Exam Guide",
+      "path": "/education/practical",
+      "description": "Materials checklist and step-by-step instructions for every section of the Texas barber practical exam."
+    },
+    {
+      "name": "Group Mode",
+      "path": "/education/room",
+      "description": "Live study rooms for a class — host creates a room, students join with a code.",
+      "status": "coming_soon"
+    }
+  ],
+  "pricing": {
+    "model": "freemium",
+    "free": "Account required (Google sign-in); single-topic flashcards, quiz, and practical exam guide access.",
+    "paid": {
+      "amount": 15,
+      "currency": "USD",
+      "term": "one-time (lifetime)",
+      "unlocks": "Full multi-topic study and the complete 300-question bank."
+    }
+  },
+  "auth": "Google OAuth via Clerk",
+  "contact": "partners@fadejunkie.com",
+  "lastUpdated": "2026-07-23"
+}

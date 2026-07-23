@@ -7,6 +7,8 @@ Disallow: /education/room
 Disallow: /growth
 Disallow: /unsubscribe
 
+Sitemap: https://fadejunkie.com/sitemap.xml
+
 # ─── AI answer engines / GEO (explicit allow — public content only) ───
 
 # OpenAI

@@ -1,0 +1,21 @@
+{
+  "name": "FadeJunkie",
+  "url": "https://fadejunkie.com",
+  "description": "Free study tool for Texas barber students preparing for the TDLR state board exam — flashcards, timed practice quizzes, and live group study, built by barbers.",
+  "category": "Education / Exam Preparation",
+  "audience": "Barber students in TDLR-licensed Texas barber programs, preparing for the Class A Barber written and practical exams",
+  "foundingContext": "First digital product from the FadeJunkie barber-culture brand",
+  "primaryFeatures": [
+    "300+ flashcards across 13 Texas state board exam topics",
+    "Timed practice quiz (20/50/100 questions), randomized or by topic",
+    "Practical exam guide covering every TDLR practical exam section",
+    "Live group study rooms (coming soon)"
+  ],
+  "contentSource": "Milady Standard Barbering published curriculum",
+  "contact": "partners@fadejunkie.com",
+  "sameAs": [
+    "https://www.instagram.com/fadejunkie",
+    "https://www.tiktok.com/@fadejunkieofficial"
+  ],
+  "lastUpdated": "2026-07-23"
+}

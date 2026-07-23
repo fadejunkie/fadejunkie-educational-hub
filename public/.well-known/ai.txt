@@ -1,0 +1,19 @@
+# ai.txt — FadeJunkie Educational Hub
+# https://fadejunkie.com
+
+Organization: FadeJunkie
+Site: https://fadejunkie.com
+Purpose: Free study tool for Texas barber students preparing for the TDLR state board exam — flashcards, timed practice quizzes, and live group study.
+Content-Type: Educational software, exam-prep content
+Content-Source: Milady Standard Barbering (published curriculum), TDLR/PSI public exam requirements
+Contact: partners@fadejunkie.com
+
+# Machine-readable companions
+Summary: https://fadejunkie.com/ai/summary.json
+FAQ: https://fadejunkie.com/ai/faq.json
+Service: https://fadejunkie.com/ai/service.json
+LLMs: https://fadejunkie.com/llms.txt
+Sitemap: https://fadejunkie.com/sitemap.xml
+
+# AI crawler access is governed by /robots.txt — all major AI answer-engine
+# and training bots are explicitly allowed on public routes.

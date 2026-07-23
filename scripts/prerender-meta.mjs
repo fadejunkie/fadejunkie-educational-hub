@@ -1,7 +1,8 @@
 // Generates a static index.html per public route under dist/, each a copy of the
-// base SPA shell with that route's real <title>/description/canonical/JSON-LD baked
-// in — so non-JS HTTP crawlers (most AI answer-engine bots) see accurate per-page
-// metadata instead of the identical generic shell every route otherwise serves.
+// base SPA shell with that route's real <title>/description/canonical/JSON-LD, and
+// (as of 2026-07-23) real static body copy, baked in — so non-JS HTTP crawlers (most
+// AI answer-engine bots) see accurate per-page metadata AND actual page content,
+// instead of the identical empty generic shell every route otherwise serves.
 // Run: node scripts/prerender-meta.mjs (wired into `npm run build` as a postbuild step)
 
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
@@ -46,6 +47,12 @@ function renderShell(meta) {
   if (/<meta property="og:url"[^>]*>/.test(html)) {
     html = html.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${meta.canonical}" />`)
   }
+  if (/<meta name="twitter:title"[^>]*>/.test(html)) {
+    html = html.replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`)
+  }
+  if (/<meta name="twitter:description"[^>]*>/.test(html)) {
+    html = html.replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`)
+  }
 
   // Replace any existing static JSON-LD block (e.g. the homepage's), else insert a fresh one before </head>
   const jsonLdTag = meta.jsonLd
@@ -57,12 +64,23 @@ function renderShell(meta) {
     html = html.replace('</head>', `  ${jsonLdTag}\n  </head>`)
   }
 
+  // Bake real crawlable body copy into the initial #root shell. Safe no-op for
+  // real visitors — main.tsx uses createRoot (not hydrateRoot), so React just
+  // overwrites this div's contents on mount; non-JS bots see the real text first.
+  if (meta.staticContent) {
+    html = html.replace(
+      '<div id="root"></div>',
+      `<div id="root">${meta.staticContent.trim()}</div>`
+    )
+  }
+
   return html
 }
 
 for (const [route, meta] of Object.entries(routeMeta)) {
-  if (route === '/') continue // homepage shell already lives at dist/index.html
-
+  // '/' resolves to distDir itself (route.replace(/^\//, '') === ''), which is
+  // exactly where dist/index.html already lives — so the homepage goes through
+  // the same meta/JSON-LD/static-content pipeline as every other route below.
   const outDir = join(distDir, route.replace(/^\//, ''))
   mkdirSync(outDir, { recursive: true })
   writeFileSync(join(outDir, 'index.html'), renderShell(meta))

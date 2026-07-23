@@ -8,8 +8,9 @@ FadeJunkie Educational Hub is the first digital product from FadeJunkie. It's fr
 
 - [Education Hub](https://fadejunkie.com/education): Entry point to all study modes.
 - [Flashcards](https://fadejunkie.com/education/flash): 300 Texas state board questions across two decks, filterable by topic (Life Skills, History, Anatomy, Tools, Sanitation, and more). Star cards to build a personal weak-spot deck.
-- [Solo Quiz](https://fadejunkie.com/education/quiz): Timed multiple-choice quiz (20/50/100/150 questions), randomized from the full question bank or by topic, scored with a per-topic breakdown.
+- [Solo Quiz](https://fadejunkie.com/education/quiz): Timed multiple-choice quiz (20/50/100 questions), randomized from the full question bank or by topic, scored with a per-topic breakdown.
 - [Practical Exam Guide](https://fadejunkie.com/education/practical): Guidance for the hands-on portion of the Texas state board exam.
+- [Texas Barber State Board Exam Guide](https://fadejunkie.com/guide/texas-barber-state-board-exam): Independent guide to the real TDLR/PSI exam process — required hours, scheduling, exam sections, fees.
 
 ## Barber Culture
 
@@ -22,5 +23,5 @@ FadeJunkie Educational Hub is the first digital product from FadeJunkie. It's fr
 
 ## Notes
 
-- No account required to use flashcards or solo quiz. An account (Google sign-in) is only needed to save progress or join a live group quiz room.
+- A free account (Google sign-in) is required to use flashcards, the solo quiz, and the practical exam guide. A one-time $15 lifetime pass unlocks full multi-topic study and the complete question bank.
 - Content is sourced from Milady published materials; Texas curriculum only, for now.

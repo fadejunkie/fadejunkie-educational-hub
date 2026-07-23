@@ -1,0 +1,29 @@
+{
+  "faqs": [
+    {
+      "question": "What is FadeJunkie?",
+      "answer": "A free study tool built by barbers for Texas barber students preparing for the TDLR state board exam — flashcards, a timed practice quiz, and a practical exam guide, sourced from the Milady curriculum."
+    },
+    {
+      "question": "Is FadeJunkie free?",
+      "answer": "Creating an account is free and gets you into flashcards, the practice quiz, and the practical exam guide. A one-time $15 lifetime pass unlocks full multi-topic study and the complete 300-question bank."
+    },
+    {
+      "question": "What topics are covered?",
+      "answer": "All 13 areas tested on the Texas barber state board exam: Life Skills, History, Sanitation, Tools & Equipment, Anatomy, Haircutting, Business, Science & Chemistry, Chemical Services, Hair Science, Skin Science, Disorders, and Shaving."
+    },
+    {
+      "question": "How many hours do I need before I can take the Texas barber written exam?",
+      "answer": "900 of the required 1,000 hours of a Class A Barber course at a TDLR-licensed school."
+    },
+    {
+      "question": "Who administers the Texas barber licensing exams?",
+      "answer": "PSI, TDLR's third-party testing vendor, administers both the written and practical Class A Barber exams."
+    },
+    {
+      "question": "Does FadeJunkie cover states other than Texas?",
+      "answer": "Not yet — Texas Class A Barber curriculum only, for now."
+    }
+  ],
+  "lastUpdated": "2026-07-23"
+}
