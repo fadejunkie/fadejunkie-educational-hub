@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SignedIn, SignedOut, useUser, SignInButton } from '@clerk/clerk-react'
 import { useQuery, useMutation } from 'convex/react'
+import { Star, RotateCcw } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { TOPICS } from '../data/studyData'
 import { FlashCardVisual, QuizQuestionCard, QuizChoices, QuizExplanation } from '../components/StudyPreview'
@@ -592,22 +593,48 @@ function WaitlistTab() {
 // since Flash.tsx/Quiz.tsx read from the same Convex tables. Preview reuses
 // the exact live-page rendering components from components/StudyPreview.
 
-function PreviewModal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+// Browser-chrome shell around the preview so it reads as "a page", not a
+// bare component — traffic-light dots + a fake URL bar, matching the real
+// route each preview mimics.
+function PreviewModal({ path, onClose, children }: { path: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        position: 'fixed', inset: 0, background: 'rgba(20,20,20,0.6)', zIndex: 1000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px', overflowY: 'auto',
       }}
     >
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto',
+          background: 'var(--color-white)', borderRadius: '14px', boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
+        }}
+      >
+        {/* Fake browser chrome */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px',
+          background: '#edecea', borderBottom: '1px solid rgba(0,0,0,0.08)',
+          borderRadius: '14px 14px 0 0', position: 'sticky', top: 0, zIndex: 1,
+        }}>
+          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f57' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#febc2e' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#28c840' }} />
+          </div>
+          <span style={{
+            flex: 1, fontSize: '12px', color: 'rgba(0,0,0,0.45)', background: 'var(--color-white)',
+            border: '1px solid rgba(0,0,0,0.08)', borderRadius: '6px', padding: '4px 10px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {path}
+          </span>
           <button
             onClick={onClose}
-            style={{ fontSize: '13px', fontWeight: 600, color: '#fff', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '6px', padding: '6px 12px', cursor: 'pointer' }}
+            style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(0,0,0,0.5)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}
           >
-            Close preview ✕
+            Close ✕
           </button>
         </div>
         {children}
@@ -616,32 +643,107 @@ function PreviewModal({ onClose, children }: { onClose: () => void; children: Re
   )
 }
 
-function FlashCardPreview({ question, answer, onClose }: { question: string; answer: string; onClose: () => void }) {
+function FlashCardPreview({
+  id, topic, question, answer, onClose,
+}: { id: number; topic: string; question: string; answer: string; onClose: () => void }) {
   const [flipped, setFlipped] = useState(false)
+  const [starred, setStarred] = useState(false)
+  const disabledNavStyle: React.CSSProperties = {
+    flex: 1, height: '40px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--color-white)',
+    color: 'var(--color-warm-300)', cursor: 'not-allowed', fontSize: '16px', fontWeight: 600,
+  }
+
   return (
-    <PreviewModal onClose={onClose}>
-      <div style={{ maxWidth: '560px', margin: '0 auto' }}>
-        <FlashCardVisual question={question} answer={answer} flipped={flipped} onFlip={() => setFlipped(f => !f)} />
-        <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.85)', marginTop: '12px' }}>
-          Tap the card to flip — exactly as it renders on /education/flash
-        </p>
+    <PreviewModal path="fadejunkie.com/education/flash" onClose={onClose}>
+      {/* Replica of Flash.tsx's top bar */}
+      <div style={{ borderBottom: '1px solid rgba(0,0,0,0.1)', background: 'var(--color-white)' }}>
+        <div style={{ maxWidth: '560px', margin: '0 auto', padding: '0 20px', height: '44px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ flex: 1 }} />
+          <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-warm-500)' }}>← Hub</span>
+          <div style={{ width: '1px', height: '18px', background: 'rgba(0,0,0,0.12)' }} />
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', padding: '2px', background: 'rgba(0,0,0,0.04)', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)' }}>
+            <span style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '4px', background: 'var(--color-black-95)', color: '#fff' }}>Flashcards</span>
+            <span style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '4px', color: 'rgba(0,0,0,0.6)' }}>Quiz</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Replica of Flash.tsx's main content */}
+      <div style={{ background: 'var(--color-warm-white)', padding: '40px 24px 48px', borderRadius: '0 0 14px 14px' }}>
+        <div style={{ maxWidth: '480px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+          <div style={{ width: '100%', height: '4px', background: 'rgba(0,0,0,0.07)', borderRadius: '99px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${Math.min(100, (id / 300) * 100)}%`, background: 'var(--color-blue)', borderRadius: '99px' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-black-95)' }}>
+              Card {id} <span style={{ color: 'var(--color-warm-300)', fontWeight: 400 }}>of 300</span>
+            </span>
+            <span className="fj-badge">{topic}</span>
+          </div>
+
+          <FlashCardVisual question={question} answer={answer} flipped={flipped} onFlip={() => setFlipped(f => !f)} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+            <button
+              onClick={() => setStarred(s => !s)}
+              title={starred ? 'Unstar' : 'Star'}
+              style={{
+                width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid', borderColor: starred ? 'rgba(245,196,0,0.5)' : 'rgba(0,0,0,0.1)',
+                background: starred ? 'rgba(255,196,0,0.08)' : 'var(--color-white)', cursor: 'pointer',
+                color: starred ? '#b07a00' : 'rgba(0,0,0,0.4)',
+              }}
+            >
+              <Star size={16} fill={starred ? '#f5c400' : 'none'} stroke={starred ? '#f5c400' : 'currentColor'} />
+            </button>
+            <button disabled style={disabledNavStyle}>←</button>
+            <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '52px', textAlign: 'center', color: 'var(--color-black-95)', flexShrink: 0 }}>1 / 1</span>
+            <button disabled style={disabledNavStyle}>→</button>
+            <button disabled style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--color-white)', color: 'rgba(0,0,0,0.2)', cursor: 'not-allowed' }}>
+              <RotateCcw size={15} />
+            </button>
+          </div>
+          <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(0,0,0,0.35)', margin: 0 }}>
+            Preview only — tap the card to flip. Prev/next are disabled here.
+          </p>
+        </div>
       </div>
     </PreviewModal>
   )
 }
 
 function QuizQuestionPreview({
-  question, choices, answer, explanation, onClose,
-}: { question: string; choices: string[]; answer: number; explanation: string; onClose: () => void }) {
+  id, topic, question, choices, answer, explanation, onClose,
+}: { id: number; topic: string; question: string; choices: string[]; answer: number; explanation: string; onClose: () => void }) {
   return (
-    <PreviewModal onClose={onClose}>
-      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-        <QuizQuestionCard question={question} />
-        <QuizChoices choices={choices} answer={answer} selected={answer} answered onSelect={() => {}} />
-        <QuizExplanation explanation={explanation} />
-        <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>
-          Shown with the correct answer revealed — exactly as it renders on /education/quiz after answering
-        </p>
+    <PreviewModal path="fadejunkie.com/education/quiz" onClose={onClose}>
+      {/* Replica of Quiz.tsx's in-quiz top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(0,0,0,0.1)', background: 'var(--color-white)' }}>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-warm-500)' }}>Exit quiz</span>
+        <span style={{ fontSize: '12px', color: 'var(--color-warm-300)' }}>Q {id} of 300 · {topic}</span>
+      </div>
+
+      <div style={{ background: 'var(--color-warm-white)', padding: '32px 24px 48px', borderRadius: '0 0 14px 14px' }}>
+        <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-black-95)' }}>
+              Q {id} <span style={{ color: 'var(--color-warm-300)', fontWeight: 400 }}>of 300</span>
+            </span>
+            <span className="fj-badge">{topic}</span>
+          </div>
+          <div style={{ height: '4px', background: 'rgba(0,0,0,0.07)', borderRadius: '99px', marginBottom: '32px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '100%', background: 'var(--color-blue)', borderRadius: '99px' }} />
+          </div>
+
+          <QuizQuestionCard question={question} />
+          <QuizChoices choices={choices} answer={answer} selected={answer} answered onSelect={() => {}} />
+          <QuizExplanation explanation={explanation} />
+          <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(0,0,0,0.35)', margin: 0 }}>
+            Preview only — shown with the correct answer already revealed.
+          </p>
+        </div>
       </div>
     </PreviewModal>
   )
@@ -730,7 +832,7 @@ function FlashCardRow({ card }: { card: FlashCardDoc }) {
           </div>
         </div>
       )}
-      {previewing && <FlashCardPreview question={card.question} answer={card.answer} onClose={() => setPreviewing(false)} />}
+      {previewing && <FlashCardPreview id={card.id} topic={card.topic} question={card.question} answer={card.answer} onClose={() => setPreviewing(false)} />}
     </div>
   )
 }
@@ -948,7 +1050,7 @@ function QuizQuestionRow({ q }: { q: QuizQuestionDoc }) {
         </div>
       )}
       {previewing && (
-        <QuizQuestionPreview question={q.question} choices={q.choices} answer={q.answer} explanation={q.explanation} onClose={() => setPreviewing(false)} />
+        <QuizQuestionPreview id={q.id} topic={q.topic} question={q.question} choices={q.choices} answer={q.answer} explanation={q.explanation} onClose={() => setPreviewing(false)} />
       )}
     </div>
   )
